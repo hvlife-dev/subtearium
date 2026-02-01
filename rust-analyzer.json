@@ -1,0 +1,18 @@
+{
+  "cargo": {
+    "features": ["ssr", "hydrate"]
+  },
+  "check": {
+    "features": ["ssr", "hydrate"],
+    // "command": "clippy"
+  },
+  "procMacro": {
+    "ignored": {
+      "leptos_macro": ["server"]
+    }
+  },
+  "diagnostics": {
+    "disabled": ["proc-macro-disabled", "unresolved-proc-macro", "macro-error"],
+    "enableExperimental": true
+  },
+}

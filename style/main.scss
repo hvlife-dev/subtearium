@@ -1,0 +1,288 @@
+/* -------------------------------------------------------------------------
+   1. FONTS & IMPORTS
+   ------------------------------------------------------------------------- */
+@import url("https://code.cdn.mozilla.net/fonts/fira.css");
+
+$font-sans: 'Fira Sans', sans-serif;
+$font-mono: 'Fira Mono', monospace;
+
+
+/* -------------------------------------------------------------------------
+   2. PALETTE VARIABLES (Extracted from tokyodark.nvim)
+   ------------------------------------------------------------------------- */
+
+// Backgrounds
+$color-bg-base:    #11121D; // bg0
+$color-bg-surface: #1A1B2A; // bg1
+$color-bg-lighter: #212234; // bg2
+$color-bg-overlay: #353945; // bg3
+$color-bg-input:   #282C34; // bg5
+
+// Foreground / Text
+$color-fg-primary: #A0A8CD;
+$color-fg-muted:   #4A5057;
+
+// Accents
+$color-red:        #EE6D85;
+$color-orange:     #F6955B;
+$color-yellow:     #D7A65F;
+$color-green:      #95C561;
+$color-blue:       #7199EE;
+$color-cyan:       #38A89D;
+$color-purple:     #A485DD;
+
+// Special Diff Colors (alerts)
+$color-diff-red:   #773440;
+$color-diff-green: #587738;
+
+
+/* -------------------------------------------------------------------------
+   3. BASE / RESET
+   ------------------------------------------------------------------------- */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: $color-bg-base;
+  color: $color-fg-primary;
+  font-family: $font-sans;
+  font-weight: 400;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+}
+
+// Headings
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  margin-top: 0;
+  color: #fff;
+}
+
+// Links
+a {
+  color: $color-blue;
+  text-decoration: none;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: $color-purple;
+  }
+}
+
+// Code blocks
+pre, code {
+  font-family: $font-mono;
+}
+
+
+/* -------------------------------------------------------------------------
+   4. COMPONENT EXAMPLES
+   ------------------------------------------------------------------------- */
+
+// Example: A content container or card
+.card {
+  background-color: $color-bg-surface;
+  border: 1px solid $color-bg-lighter;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+
+  .card-title {
+    color: $color-purple;
+    margin-bottom: 0.5rem;
+  }
+
+  .card-footer {
+    border-top: 1px solid $color-bg-overlay;
+    margin-top: 1rem;
+    padding-top: 0.5rem;
+    font-size: 0.9rem;
+    color: $color-fg-muted;
+  }
+}
+
+// Example: Primary Button
+.btn-primary {
+  display: inline-block;
+  background-color: $color-purple;
+  color: $color-bg-base; // Dark text on bright button
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  
+  &:hover {
+    background-color: lighten($color-purple, 5%);
+  }
+}
+
+// Example: Code Block / Terminal view
+.code-block {
+  background-color: $color-bg-input;
+  border-left: 3px solid $color-green;
+  padding: 1rem;
+  border-radius: 4px;
+  color: $color-fg-primary;
+  
+  .keyword { color: $color-red; }
+  .string  { color: $color-green; }
+  .func    { color: $color-blue; }
+}
+
+/* -------------------------------------------------------------------------
+   5. LAYOUT & SIDEBAR
+   ------------------------------------------------------------------------- */
+
+// Flex container to hold Sidebar and Content side-by-side
+.app-container {
+  display: flex;
+  min-height: 100vh; // Full viewport height
+  width: 100%;
+}
+
+// The permanent sidebar
+.sidebar {
+  width: 250px;
+  background-color: $color-bg-surface; // bg1
+  border-right: 1px solid $color-bg-lighter; // bg2
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1rem;
+  flex-shrink: 0; // Prevent sidebar from shrinking
+}
+
+// Sidebar branding area
+.brand {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: $color-purple;
+  margin-bottom: 2rem;
+  padding-left: 0.8rem;
+}
+
+// Navigation Links
+.nav-link {
+  display: block;
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 6px;
+  color: $color-fg-muted;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+
+  &:hover {
+    background-color: $color-bg-lighter;
+    color: $color-fg-primary;
+  }
+
+  &[aria-current="page"] {
+    background-color: $color-bg-lighter;
+    color: $color-blue; 
+    border-left-color: $color-blue;
+  }
+}
+
+// Main content area where pages load
+.main-content {
+  flex-grow: 1;
+  background-color: $color-bg-base; // bg0
+  padding: 2rem;
+  overflow-y: auto; // Allow scrolling inside content
+}
+
+/* -------------------------------------------------------------------------
+   6. FORMS & INPUTS
+   ------------------------------------------------------------------------- */
+
+.form-group {
+  margin-bottom: 1.5rem;
+  
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: $color-fg-primary;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+}
+
+.form-control {
+  width: 100%;
+  background-color: $color-bg-input; // #282C34 (Darker bg)
+  border: 1px solid $color-bg-lighter; // #212234 (Subtle border)
+  color: $color-fg-primary;
+  padding: 0.7rem 1rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  font-family: $font-mono; // Fira Mono for paths/numbers
+  transition: all 0.2s ease;
+
+  // Placeholder text styling
+  &::placeholder {
+    color: $color-fg-muted;
+    opacity: 0.7;
+  }
+
+  // Focus State: Glow with Purple
+  &:focus {
+    outline: none;
+    border-color: $color-purple;
+    box-shadow: 0 0 0 3px rgba($color-purple, 0.15);
+  }
+}
+
+input[type="number"] {
+  color-scheme: dark; 
+  
+  -moz-appearance: auto;
+  appearance: auto;
+  
+  &::-webkit-inner-spin-button, 
+  &::-webkit-outer-spin-button {
+    opacity: 1; 
+    cursor: pointer;
+  }
+}
+/* -------------------------------------------------------------------------
+   7. TOGGLE BUTTON
+   ------------------------------------------------------------------------- */
+.btn-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.5rem;
+  font-family: $font-mono;
+  font-weight: 700;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+  
+  // DEFAULT STATE (OFF)
+  background-color: $color-bg-input; // Dark Grey
+  border: 1px solid $color-fg-muted;
+  color: $color-fg-muted;
+
+  &:hover {
+    border-color: $color-fg-primary;
+    color: $color-fg-primary;
+  }
+
+  // ACTIVE STATE (ON)
+  &.active {
+    background-color: $color-green; // Bright Green
+    border-color: $color-green;
+    color: $color-bg-base; // Dark text on bright bg
+    box-shadow: 0 0 10px rgba($color-green, 0.4);
+
+    &:hover {
+      background-color: lighten($color-green, 5%);
+    }
+  }
+}
