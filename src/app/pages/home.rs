@@ -19,16 +19,26 @@ pub fn HomePage() -> impl IntoView {
                 {move || engine.status.get().map(|res| match res {
                     Ok(data) => view! {
                         
-                        <Toggle 
-                            label="Active?" 
-                            value=data.active 
-                            on_toggle=engine.set_active
-                        />
                         <TextInput 
                             label="Workdir - your library path" 
                             value=data.workdir.clone()
                             placeholder="Type to search..."
                             on_input=engine.set_workdir 
+                        />
+                        <Toggle 
+                            label="Destructive?" 
+                            value=data.destructive 
+                            on_toggle=engine.set_destructive
+                        />
+                        <Toggle 
+                            label="Nuke all lyrics?" 
+                            value=data.nuke 
+                            on_toggle=engine.set_nuke
+                        />
+                        <Toggle 
+                            label="Active?" 
+                            value=data.active 
+                            on_toggle=engine.set_active
                         />
                         <NumberInput 
                             label="Scanning interval [seconds]" 
@@ -37,21 +47,18 @@ pub fn HomePage() -> impl IntoView {
                             max=100
                             on_input=engine.set_interval 
                         />
-                        <Toggle 
-                            label="Nuke all lyrics?" 
-                            value=data.nuke 
-                            on_toggle=engine.set_nuke
-                        />
 
                         <hr style="border-color: #333;"/>
                         
                         <div>
                             <h3>"Make-a-surer"</h3>
                             <pre style="color: #98C379;">"Totally: " {data.songs_amount}</pre>
+                            <pre style="color: #98C379;">"Predating: " {data.songs_predating}</pre>
                             <pre style="color: #98C379;">"Synced: " {data.songs_synced}</pre>
                             <pre style="color: #98C379;">"Plain: " {data.songs_plain}</pre>
                             <pre style="color: #98C379;">"Not found: " {data.songs_noresult}</pre>
                             <pre style="color: #98C379;">"Badly tagged: " {data.songs_tagerr}</pre>
+                            <pre style="color: #98C379;">"Unaccounted: " {data.songs_unaccounted}</pre>
                         </div>
 
                     }.into_any(),

@@ -37,6 +37,9 @@ pub async fn send_command(cmd: EngineCommand) -> Result<(), ServerFnError> {
         },
         EngineCommand::Nuke(status) => {
             data.nuke = status;
+        },
+        EngineCommand::Destructive(status) => {
+            data.destructive = status;
         }
     }
 
