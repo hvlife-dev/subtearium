@@ -1,5 +1,10 @@
 use crate::server::state::{AppState, SongStatus};
-
+use crate::server::tracker::{init_library, update_library, save_library};
+use crate::server::calls::get_lyric;
+use std::path::PathBuf;
+use audiotags::Tag;
+use tokio::fs;
+use tokio::io::AsyncWriteExt;
 
 pub async fn run_lyrics_engine(state: AppState) {
     loop {
@@ -9,9 +14,11 @@ pub async fn run_lyrics_engine(state: AppState) {
                 let data = state.read().unwrap();
                 path = data.workdir.clone();
             }
-            let _ = init_library(path, &state);
+            let _ = init_library(&path, &state);
+            let _ = update_library(&path, &state);
             let _ = search_missing(&state).await;
             let _ = update_stats(&state);
+            save_library(&state);
         }
     }
 }
@@ -25,15 +32,11 @@ fn nuke_check(state: &AppState) -> bool {
     if nuke {
         let mut data = state.write().unwrap();
         data.nuke = false;
-        data.songs_amount = 0;
-        data.songs_tagerr = 0;
-        data.songs_noresult = 0;
-        data.songs_plain = 0;
-        data.songs_synced = 0;
         return true;
     }
     false
 }
+
 
 fn update_stats(state: &AppState) -> std::io::Result<()> {
     let mut data = state.write().unwrap();
@@ -47,42 +50,6 @@ fn update_stats(state: &AppState) -> std::io::Result<()> {
     Ok(())
 }
 
-use std::path::{Path, PathBuf};
-use audiotags::Tag;
-use tokio::fs;
-use tokio::io::AsyncWriteExt;
-use walkdir::WalkDir;
-
-
-fn init_library(root_path: String, state: &AppState) -> std::io::Result<()> {
-    let allowed = [
-        "mp3", "mp4", "m4a", "flac"
-    ];
-    
-    let destructive;
-    {
-        let data = state.read().unwrap();
-        destructive = data.destructive;
-    }
-    let library = WalkDir::new(root_path).into_iter()
-        .filter_map(|e| e.ok() )
-        .filter(|e| e.path().is_file() )
-        .filter(|e| allowed.contains( &e.path().extension().and_then(|e| e.to_str() ).unwrap_or("nil") ))
-        .filter_map(|e| { 
-            if !destructive && Path::new(e.path().with_extension("lrc").as_path()).exists() {
-                e.path().to_str().map(|s| (s.to_string(), SongStatus::Predating))
-            } else {
-                e.path().to_str().map(|s| (s.to_string(), SongStatus::Unaccounted))
-            }
-        } )
-        .collect()
-    ;
-    
-    let mut data = state.write().unwrap();
-    data.library = library;
-
-    Ok(())
-}
 
 async fn search_missing(state: &AppState) -> std::io::Result<()> {
     let songs = {
@@ -109,7 +76,6 @@ async fn search_missing(state: &AppState) -> std::io::Result<()> {
     Ok(())
 }
 
-use crate::server::calls::get_lyric;
 
 async fn handle_song(path: PathBuf) -> std::io::Result<SongStatus> {
     println!("Found song at: {:?}", path);

@@ -35,7 +35,6 @@ pub struct GlobalState {
     pub songs_noresult: i32,
     pub songs_tagerr: i32,
     pub songs_unaccounted: i32,
-    pub error_code: u32,
 
     pub library: HashMap<String, SongStatus>
 }
@@ -57,7 +56,6 @@ pub fn init_state() -> AppState {
         songs_noresult: 0,
         songs_tagerr: 0,
         songs_unaccounted: 0,
-        error_code: 0,
 
         library: HashMap::new()
     }))
