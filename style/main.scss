@@ -1,26 +1,27 @@
-/* -------------------------------------------------------------------------
+/* ==========================================================================
    1. FONTS & IMPORTS
-   ------------------------------------------------------------------------- */
+   ========================================================================== */
 @import url("https://code.cdn.mozilla.net/fonts/fira.css");
 
 $font-sans: 'Fira Sans', sans-serif;
 $font-mono: 'Fira Mono', monospace;
 
 
-/* -------------------------------------------------------------------------
-   2. PALETTE VARIABLES (Extracted from tokyodark.nvim)
-   ------------------------------------------------------------------------- */
+/* ==========================================================================
+   2. PALETTE VARIABLES (Tokyodark.nvim)
+   ========================================================================== */
 
 // Backgrounds
-$color-bg-base:    #11121D; // bg0
-$color-bg-surface: #1A1B2A; // bg1
-$color-bg-lighter: #212234; // bg2
-$color-bg-overlay: #353945; // bg3
-$color-bg-input:   #282C34; // bg5
+$color-bg-base:    #11121D; // bg0 (Deepest)
+$color-bg-surface: #1A1B2A; // bg1 (Card bg)
+$color-bg-lighter: #212234; // bg2 (Borders/Sidebar)
+$color-bg-overlay: #353945; // bg3 (Hover states)
+$color-bg-input:   #282C34; // bg5 (Inputs/Code)
 
-// Foreground / Text
-$color-fg-primary: #A0A8CD;
-$color-fg-muted:   #4A5057;
+// Foreground
+$color-fg-primary: #A0A8CD; // Main text
+$color-fg-muted:   #4A5057; // Comments/Labels
+$color-fg-light:   #ECEFF4; // Headings
 
 // Accents
 $color-red:        #EE6D85;
@@ -31,14 +32,10 @@ $color-blue:       #7199EE;
 $color-cyan:       #38A89D;
 $color-purple:     #A485DD;
 
-// Special Diff Colors (alerts)
-$color-diff-red:   #773440;
-$color-diff-green: #587738;
 
-
-/* -------------------------------------------------------------------------
+/* ==========================================================================
    3. BASE / RESET
-   ------------------------------------------------------------------------- */
+   ========================================================================== */
 
 * {
   box-sizing: border-box;
@@ -54,14 +51,14 @@ body {
   padding: 0;
 }
 
-// Headings
+/* Headings */
 h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   margin-top: 0;
-  color: #fff;
+  color: $color-fg-light;
 }
 
-// Links
+/* Links */
 a {
   color: $color-blue;
   text-decoration: none;
@@ -72,100 +69,90 @@ a {
   }
 }
 
-// Code blocks
+/* Code */
 pre, code {
   font-family: $font-mono;
 }
 
-
-/* -------------------------------------------------------------------------
-   4. COMPONENT EXAMPLES
-   ------------------------------------------------------------------------- */
-
-// Example: A content container or card
-.card {
-  background-color: $color-bg-surface;
-  border: 1px solid $color-bg-lighter;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-
-  .card-title {
-    color: $color-purple;
-    margin-bottom: 0.5rem;
-  }
-
-  .card-footer {
-    border-top: 1px solid $color-bg-overlay;
-    margin-top: 1rem;
-    padding-top: 0.5rem;
-    font-size: 0.9rem;
-    color: $color-fg-muted;
-  }
+/* UI Polish: Selection & Scrollbars */
+::selection {
+  background: rgba($color-purple, 0.3);
+  color: $color-fg-light;
 }
 
-// Example: Primary Button
-.btn-primary {
-  display: inline-block;
-  background-color: $color-purple;
-  color: $color-bg-base; // Dark text on bright button
-  padding: 0.6rem 1.2rem;
-  border-radius: 4px;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: $color-bg-base;
+}
+::-webkit-scrollbar-thumb {
+  background: $color-bg-overlay;
+  border-radius: 5px;
+  border: 2px solid $color-bg-base;
   
   &:hover {
-    background-color: lighten($color-purple, 5%);
+    background: $color-fg-muted;
   }
 }
 
-// Example: Code Block / Terminal view
-.code-block {
-  background-color: $color-bg-input;
-  border-left: 3px solid $color-green;
-  padding: 1rem;
-  border-radius: 4px;
-  color: $color-fg-primary;
-  
-  .keyword { color: $color-red; }
-  .string  { color: $color-green; }
-  .func    { color: $color-blue; }
-}
 
-/* -------------------------------------------------------------------------
-   5. LAYOUT & SIDEBAR
-   ------------------------------------------------------------------------- */
+/* ==========================================================================
+   4. LAYOUT & SIDEBAR
+   ========================================================================== */
 
-// Flex container to hold Sidebar and Content side-by-side
 .app-container {
   display: flex;
-  min-height: 100vh; // Full viewport height
-  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background-color: $color-bg-base;
 }
 
-// The permanent sidebar
 .sidebar {
+  position: relative;
+  overflow: hidden;
   width: 250px;
-  background-color: $color-bg-surface; // bg1
-  border-right: 1px solid $color-bg-lighter; // bg2
+  background-color: $color-bg-surface;
+  border-right: 1px solid $color-bg-lighter;
   display: flex;
   flex-direction: column;
   padding: 1.5rem 1rem;
-  flex-shrink: 0; // Prevent sidebar from shrinking
+  flex-shrink: 0;
+  overflow-y: auto; 
+  z-index: 1;
 }
 
-// Sidebar branding area
+.sidebar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(255, 255, 255, 0.05) 10px,
+    rgba(255, 255, 255, 0.05) 11px
+  );
+  
+  opacity: 0.2; 
+  pointer-events: none;
+}
+
 .brand {
   font-size: 1.25rem;
   font-weight: 700;
   color: $color-purple;
   margin-bottom: 2rem;
   padding-left: 0.8rem;
+  letter-spacing: 1px;
 }
 
-// Navigation Links
 .nav-link {
   display: block;
   padding: 0.8rem 1rem;
@@ -188,17 +175,117 @@ pre, code {
   }
 }
 
-// Main content area where pages load
 .main-content {
   flex-grow: 1;
-  background-color: $color-bg-base; // bg0
+  background-color: $color-bg-base;
   padding: 2rem;
-  overflow-y: auto; // Allow scrolling inside content
+  overflow-y: auto;
+  scroll-behavior: smooth;
 }
 
-/* -------------------------------------------------------------------------
+
+/* ==========================================================================
+   5. COMPONENTS
+   ========================================================================== */
+
+/* --- Card --- */
+.card {
+  background-color: $color-bg-surface;
+  border: 1px solid $color-bg-lighter;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* --- Buttons --- */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: $color-purple;
+  color: $color-bg-base;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: lighten($color-purple, 5%);
+    transform: translateY(-1px);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.8;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Success State (for your Apply Button) */
+  &.success {
+    background-color: $color-green !important;
+    border-color: $color-green !important;
+    color: $color-bg-base !important;
+    cursor: default;
+    box-shadow: none;
+    
+    &:hover {
+      transform: none;
+      background-color: $color-green !important;
+    }
+  }
+}
+
+/* --- Code Block --- */
+.code-block {
+  background-color: $color-bg-input;
+  border: 1px solid $color-bg-lighter;
+  border-left: 3px solid $color-green;
+  padding: 1.5rem;
+  border-radius: 4px;
+  color: $color-fg-primary;
+  margin-bottom: 1rem;
+  font-family: $font-mono;
+  
+  .keyword { color: $color-red; }
+  .string  { color: $color-green; }
+  .func    { color: $color-blue; }
+}
+
+/* --- Divider (New) --- */
+.separator-container {
+  display: flex;
+  align-items: center;
+  margin: 2rem 0;
+  width: 100%;
+  opacity: 0.5;
+
+  .separator-line {
+    height: 1px;
+    background-color: $color-fg-muted;
+    flex-grow: 1;
+  }
+
+  .separator-text {
+    padding: 0 1rem;
+    color: $color-fg-muted;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+}
+
+
+/* ==========================================================================
    6. FORMS & INPUTS
-   ------------------------------------------------------------------------- */
+   ========================================================================== */
 
 .form-group {
   margin-bottom: 1.5rem;
@@ -214,22 +301,20 @@ pre, code {
 
 .form-control {
   width: 100%;
-  background-color: $color-bg-input; // #282C34 (Darker bg)
-  border: 1px solid $color-bg-lighter; // #212234 (Subtle border)
-  color: $color-fg-primary;
+  background-color: $color-bg-input;
+  border: 1px solid $color-bg-lighter;
+  color: $color-fg-light; /* Brighter text for inputs */
   padding: 0.7rem 1rem;
   font-size: 1rem;
   border-radius: 6px;
-  font-family: $font-mono; // Fira Mono for paths/numbers
+  font-family: $font-mono;
   transition: all 0.2s ease;
 
-  // Placeholder text styling
   &::placeholder {
     color: $color-fg-muted;
     opacity: 0.7;
   }
 
-  // Focus State: Glow with Purple
   &:focus {
     outline: none;
     border-color: $color-purple;
@@ -237,21 +322,7 @@ pre, code {
   }
 }
 
-input[type="number"] {
-  color-scheme: dark; 
-  
-  -moz-appearance: auto;
-  appearance: auto;
-  
-  &::-webkit-inner-spin-button, 
-  &::-webkit-outer-spin-button {
-    opacity: 1; 
-    cursor: pointer;
-  }
-}
-/* -------------------------------------------------------------------------
-   7. TOGGLE BUTTON
-   ------------------------------------------------------------------------- */
+/* Toggle Switch Style */
 .btn-toggle {
   display: inline-flex;
   align-items: center;
@@ -264,8 +335,8 @@ input[type="number"] {
   transition: all 0.3s ease;
   min-width: 120px;
   
-  // DEFAULT STATE (OFF)
-  background-color: $color-bg-input; // Dark Grey
+  /* OFF STATE */
+  background-color: $color-bg-input;
   border: 1px solid $color-fg-muted;
   color: $color-fg-muted;
 
@@ -274,15 +345,197 @@ input[type="number"] {
     color: $color-fg-primary;
   }
 
-  // ACTIVE STATE (ON)
+  /* ON STATE */
   &.active {
-    background-color: $color-green; // Bright Green
+    background-color: $color-green;
     border-color: $color-green;
-    color: $color-bg-base; // Dark text on bright bg
-    box-shadow: 0 0 10px rgba($color-green, 0.4);
+    color: $color-bg-base;
+    box-shadow: 0 0 10px rgba($color-green, 0.2); // Reduced glow slightly
 
     &:hover {
       background-color: lighten($color-green, 5%);
     }
+  }
+}
+
+
+/* ==========================================================================
+   7. DASHBOARD STATS
+   ========================================================================== */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background-color: $color-bg-surface;
+  padding: 1rem;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  transition: transform 0.2s ease;
+  
+  /* Default border if no color provided */
+  border-top: 3px solid $color-bg-overlay; 
+
+  &:hover {
+    transform: translateY(-2px);
+    background-color: lighten($color-bg-surface, 3%);
+  }
+
+  .stat-value {
+    font-size: 1.8rem;
+    font-weight: 800;
+    font-family: $font-mono;
+    margin-bottom: 0.25rem;
+    color: $color-fg-light;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: $color-fg-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+}
+
+/* Hero/Title Card Variant */
+.stat-card.title-card {
+  grid-column: span 2;
+  background: linear-gradient(135deg, $color-bg-surface 0%, $color-bg-base 100%);
+  border-left: 4px solid $color-blue;
+  border-top: none; 
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  padding: 1.2rem 1.5rem;
+
+  .title-content {
+    .title-main {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: $color-fg-light;
+      margin-bottom: 0.2rem;
+    }
+    .title-sub {
+      font-size: 0.85rem;
+      color: $color-green;
+      font-family: $font-mono;
+    }
+  }
+
+  .title-icon {
+    font-size: 2rem;
+    opacity: 0.15;
+    color: $color-fg-primary;
+  }
+}
+
+@media (max-width: 600px) {
+  .stat-card.title-card {
+    grid-column: span 1;
+  }
+}
+
+/* ==========================================================================
+   8. FOOTER
+   ========================================================================== */
+
+.app-footer {
+  /* Layout */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  margin-top: auto; /* Pushes to bottom if inside flex container */
+  
+  /* Visuals */
+  background-color: $color-bg-base;
+  border-top: 1px solid $color-bg-lighter;
+  color: $color-fg-muted;
+  font-size: 0.85rem;
+  font-family: $font-sans;
+}
+
+/* Section Specifics */
+.footer-left, .footer-center, .footer-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Center Text */
+.footer-center {
+  font-family: $font-mono;
+  opacity: 0.6;
+  
+  .divider {
+    color: $color-fg-muted;
+    margin: 0 0.2rem;
+  }
+}
+
+/* Links */
+.app-footer a {
+  color: $color-fg-muted;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+
+  &:hover {
+    color: $color-purple;
+    
+    .icon {
+      transform: scale(1.2);
+    }
+  }
+}
+
+/* Heart Animation */
+.heart {
+  color: $color-red;
+  display: inline-block;
+  animation: heartbeat 1.5s infinite;
+}
+
+.icon-svg {
+  width: 1.2em;
+  height: 1.2em;
+  fill: currentColor;
+  vertical-align: text-bottom;
+  transition: transform 0.2s ease;
+}
+
+/* Hover Effect */
+.footer-link:hover .icon-svg {
+  transform: scale(1.1);
+  fill: $color-purple;
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  10% { transform: scale(1.1); }
+  20% { transform: scale(1); }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 600px) {
+  .app-footer {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .footer-center {
+    order: -1; /* Put version on top on mobile */
+    font-size: 0.75rem;
   }
 }

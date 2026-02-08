@@ -1,10 +1,11 @@
-use crate::server::state::{AppState, SongStatus};
-use std::{fs::File, io::Write, path::Path};
+use crate::server::{misc::log, state::{AppState, GlobalState, SongStatus}};
+use std::{fs::File, io::{Read, Write}, path::Path};
 use walkdir::WalkDir;
 use std::fs;
 
 
-pub fn update_library(root_path: &str, state: &AppState) -> std::io::Result<()> {
+// soft-insert new songs
+pub fn update_library(root_path: &str, state: &AppState) -> bool {
     let allowed = [
         "mp3", "mp4", "m4a", "flac"
     ];
@@ -27,12 +28,14 @@ pub fn update_library(root_path: &str, state: &AppState) -> std::io::Result<()> 
     ;
     
     let mut data = state.write().unwrap();
+    let diff = data.library != library;
     data.library = library;
 
-    Ok(())
+    diff
 }
 
 pub fn init_library(root_path: &str, state: &AppState) -> std::io::Result<()> {
+    log(state, "Initializing service database");
     let allowed = [
         "mp3", "mp4", "m4a", "flac"
     ];
@@ -74,5 +77,27 @@ pub fn save_library(state: &AppState) -> bool {
         };
     };
     
+    log(state, "Saving service state failed");
+    false
+}
+
+pub fn read_library(state: &AppState) -> bool {
+    log(state, "Loading service state");
+
+    if let Ok(mut file) = File::open("data/db.toml") {
+        let mut toml = String::new();
+        if file.read_to_string(&mut toml).is_ok() {
+            if let Ok(decoded) = toml::from_str::<GlobalState>(&toml){
+                {
+                    let mut data = state.write().unwrap();
+                    *data = decoded;
+                }
+                log(state, "Service state loaded succesfully");
+                return true;
+            }
+        }
+    };
+    
+    log(state, "Service state loading failure");
     false
 }

@@ -23,6 +23,8 @@ reqwest = { version = "^0.13", features = ["json", "query"] }
 # rusqlite = { version = "0.38.0", features = ["bundled"] }
 walkdir = "^2.5"
 toml = "^1.0"
+chrono = { version = "^0.4", features = ["serde"] }
+uuid = { version = "^1.21", features = ["v4", "serde", "js"]}
 
 [features]
 hydrate = [

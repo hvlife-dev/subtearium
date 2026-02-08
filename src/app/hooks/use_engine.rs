@@ -12,6 +12,7 @@ pub struct EngineController {
     pub set_interval: Callback<i32>,
     pub set_nuke: Callback<bool>,
     pub set_destructive: Callback<bool>,
+    pub set_savetrig: Callback<bool>,
 }
 
 pub fn use_engine() -> EngineController {
@@ -79,6 +80,16 @@ pub fn use_engine() -> EngineController {
         });
         set_timeout(move || status.refetch(), std::time::Duration::from_millis(200));
     });
+    
+    let set_savetrig = Callback::new(move |new_val: bool| {
+        dispatch.dispatch(EngineCommand::SaveTrig(new_val));
+        status.update(|data| {
+            if let Some(Ok(ref mut state)) = data {
+                state.save_trig = new_val;
+            }
+        });
+        set_timeout(move || status.refetch(), std::time::Duration::from_millis(200));
+    });
 
     EngineController {
         status,
@@ -86,6 +97,7 @@ pub fn use_engine() -> EngineController {
         set_workdir,
         set_interval,
         set_nuke,
-        set_destructive
+        set_destructive,
+        set_savetrig
     }
 }

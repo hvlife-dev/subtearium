@@ -25,21 +25,24 @@ pub async fn send_command(cmd: EngineCommand) -> Result<(), ServerFnError> {
     let mut data = state.write().map_err(|_| ServerFnError::new("Lock error"))?;
 
     match cmd {
-        EngineCommand::Workdir(q) => {
-            data.workdir = q;
+        EngineCommand::Workdir(v) => {
+            data.workdir = v;
         },
         EngineCommand::Interval(v) => {
-            let clamped = v.clamp(0, 100);
+            let clamped = v.max(1);
             data.interval = clamped;
         },
-        EngineCommand::Active(status) => {
-            data.active = status;
+        EngineCommand::Active(v) => {
+            data.active = v;
         },
-        EngineCommand::Nuke(status) => {
-            data.nuke = status;
+        EngineCommand::Nuke(v) => {
+            data.nuke = v;
         },
-        EngineCommand::Destructive(status) => {
-            data.destructive = status;
+        EngineCommand::Destructive(v) => {
+            data.destructive = v;
+        },
+        EngineCommand::SaveTrig(v) => {
+            data.save_trig = v
         }
     }
 

@@ -1,21 +1,73 @@
 use crate::server::state::{AppState, SongStatus};
-use crate::server::tracker::{init_library, update_library, save_library};
+use crate::server::tracker::{init_library, read_library, save_library, update_library};
 use crate::server::calls::get_lyric;
 use std::path::PathBuf;
 use audiotags::Tag;
+use chrono::Utc;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
+use crate::server::misc::log;
 
 pub async fn run_lyrics_engine(state: AppState) {
+
+    if !read_library(&state) {
+        let path = "/Music";
+        let _ = init_library(path, &state);
+        let _ = update_stats(&state);
+        save_library(&state);
+    }
+    log(&state, "--- Subtearium ready");
+
     loop {
-        if nuke_check(&state) {
-            let path;
+        let scan_time;
+        let interval;
+        let path;
+        let tobefound;
+        let active;
+        let save_trig;
+        {
+            let data = state.read().unwrap();
+            scan_time = data.scan_time;
+            interval = data.interval;
+            path = data.workdir.clone();
+            tobefound = data.songs_plain + data.songs_noresult + data.songs_unaccounted;
+            active = data.active;
+            save_trig = data.save_trig;
+        }
+
+        // if triggered database saving
+        if save_trig {
+            save_library(&state);
+            let mut data = state.write().unwrap();
+            data.save_trig = false;
+        }        
+
+        // if any new songs found
+        if active && update_library(&path, &state) {
+            let _ = update_stats(&state);
+            let _ = search_missing(&state).await;
+            let _ = update_stats(&state);
+            save_library(&state);
+        }
+        // if periodic time reached
+        if active && Utc::now().signed_duration_since(scan_time).num_minutes() > interval as i64 {
+            log(&state, "Begin periodic scan");
             {
-                let data = state.read().unwrap();
-                path = data.workdir.clone();
+                let mut data = state.write().unwrap();
+                data.scan_time = Utc::now();
             }
+            let _ = update_stats(&state);
+            if tobefound > 0 {
+                log(&state, &format!("Found {} missing lyrics\nBegin search", tobefound));
+                let _ = search_missing(&state).await;
+            }
+            let _ = update_stats(&state);
+            save_library(&state);
+        }
+        // if user wants to overwrite everything
+        if nuke_check(&state) {
+            log(&state, "Begin reinitializing database");
             let _ = init_library(&path, &state);
-            let _ = update_library(&path, &state);
             let _ = search_missing(&state).await;
             let _ = update_stats(&state);
             save_library(&state);
@@ -65,7 +117,7 @@ async fn search_missing(state: &AppState) -> std::io::Result<()> {
     } );
 
     for path in paths {
-        if let Ok(status) = handle_song(path.clone().into()).await {
+        if let Ok(status) = handle_song(state, path.clone().into()).await {
             let mut data = state.write().unwrap();
             if let Some(val) = data.library.get_mut(path) {
                 *val = status;
@@ -77,8 +129,9 @@ async fn search_missing(state: &AppState) -> std::io::Result<()> {
 }
 
 
-async fn handle_song(path: PathBuf) -> std::io::Result<SongStatus> {
-    println!("Found song at: {:?}", path);
+async fn handle_song(state: &AppState, path: PathBuf) -> std::io::Result<SongStatus> {
+    log(state, &format!("\nProcessing song at: {}", path.to_str().unwrap_or("Logging err")));
+
     let tag = Tag::new().read_from_path(&path);
     if tag.is_err() {return Ok(SongStatus::TagErr);}
     let tag = tag.unwrap();
@@ -89,17 +142,26 @@ async fn handle_song(path: PathBuf) -> std::io::Result<SongStatus> {
     let duration = tag.duration().unwrap_or_default().round() as u32;
     let duration = duration.to_string();
 
-    if let Ok(track) = get_lyric(title, artist, album, &duration).await {
-        let mut file = fs::File::create(path.with_extension("lrc")).await?;
+    match get_lyric(title, artist, album, &duration).await {
+        Ok(track) => {
+            let mut file = fs::File::create(path.with_extension("lrc")).await?;
         
-        if let Some(lyrics) = track.synced_lyrics {
-            file.write_all(lyrics.as_bytes()).await?;
-            return Ok(SongStatus::Synced);
-        } else if let Some(lyrics) = track.plain_lyrics {
-            file.write_all(lyrics.as_bytes()).await?;
-            return Ok(SongStatus::Plain);
+            if let Some(lyrics) = track.synced_lyrics {
+                file.write_all(lyrics.as_bytes()).await?;
+                log(state, "Found synced lyrics");
+                Ok(SongStatus::Synced)
+            } else if let Some(lyrics) = track.plain_lyrics {
+                file.write_all(lyrics.as_bytes()).await?;
+                log(state, "Found only plain lyrics");
+                Ok(SongStatus::Plain)
+            } else {
+                log(state, "No result found");
+                Ok(SongStatus::NoResult)
+            }
+        },
+        Err(e) => {
+            log(state, &format!("{} | {} | {}", e.code, e.name, e.message));
+            Ok(SongStatus::NoResult)
         }
-    };
-
-    Ok(SongStatus::NoResult)
+    }
 }

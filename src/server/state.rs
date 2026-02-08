@@ -1,5 +1,6 @@
+use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
-use std::{collections::HashMap, sync::{Arc, RwLock}};
+use std::{collections::{HashMap, VecDeque}, sync::{Arc, RwLock}};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum SongStatus {
@@ -17,7 +18,8 @@ pub enum EngineCommand {
     Interval(i32),
     Active(bool),
     Nuke(bool),
-    Destructive(bool)
+    Destructive(bool),
+    SaveTrig(bool),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -27,6 +29,7 @@ pub struct GlobalState {
     pub active: bool,
     pub nuke: bool,
     pub destructive: bool,
+    pub save_trig: bool,
 
     pub songs_amount: i32,
     pub songs_predating: i32,
@@ -36,7 +39,10 @@ pub struct GlobalState {
     pub songs_tagerr: i32,
     pub songs_unaccounted: i32,
 
-    pub library: HashMap<String, SongStatus>
+    pub scan_time: DateTime<Utc>,
+    pub library: HashMap<String, SongStatus>,
+    pub logs: VecDeque<String>,
+
 }
 
 pub type AppState = Arc<RwLock<GlobalState>>;
@@ -48,6 +54,7 @@ pub fn init_state() -> AppState {
         active: false,
         nuke: false,
         destructive: false,
+        save_trig: false,
 
         songs_amount: 0,
         songs_predating: 0,
@@ -57,6 +64,8 @@ pub fn init_state() -> AppState {
         songs_tagerr: 0,
         songs_unaccounted: 0,
 
-        library: HashMap::new()
+        scan_time: Utc::now(),
+        library: HashMap::new(),
+        logs: VecDeque::new()
     }))
 }
