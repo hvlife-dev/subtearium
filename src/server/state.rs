@@ -9,7 +9,6 @@ pub enum SongStatus {
     NoResult = 2,
     Plain = 3,
     Synced = 4,
-    Predating = 5
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -18,8 +17,10 @@ pub enum EngineCommand {
     Interval(i32),
     Active(bool),
     Nuke(bool),
-    Destructive(bool),
     SaveTrig(bool),
+    EnableSynced(bool),
+    EnablePlain(bool),
+    OffsetLyric(String, f32),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -28,11 +29,12 @@ pub struct GlobalState {
     pub interval: i32,
     pub active: bool,
     pub nuke: bool,
-    pub destructive: bool,
     pub save_trig: bool,
+    pub enable_synced: bool,
+    pub enable_plain: bool,
+    pub offset_lyric: Option<(String, f32)>,
 
     pub songs_amount: i32,
-    pub songs_predating: i32,
     pub songs_synced: i32,
     pub songs_plain: i32,
     pub songs_noresult: i32,
@@ -42,6 +44,8 @@ pub struct GlobalState {
     pub scan_time: DateTime<Utc>,
     pub library: HashMap<String, SongStatus>,
     pub logs: VecDeque<String>,
+    pub toast_counter: usize,
+    pub latest_toast: Option<(u8, String)>,
 
 }
 
@@ -50,14 +54,15 @@ pub type AppState = Arc<RwLock<GlobalState>>;
 pub fn init_state() -> AppState {
     Arc::new(RwLock::new(GlobalState {
         workdir: "default".to_string(),
-        interval: 0,
+        interval: 3,
         active: false,
         nuke: false,
-        destructive: false,
         save_trig: false,
+        enable_synced: true,
+        enable_plain: true,
+        offset_lyric: None,
 
         songs_amount: 0,
-        songs_predating: 0,
         songs_synced: 0,
         songs_plain: 0,
         songs_noresult: 0,
@@ -66,6 +71,8 @@ pub fn init_state() -> AppState {
 
         scan_time: Utc::now(),
         library: HashMap::new(),
-        logs: VecDeque::new()
+        logs: VecDeque::new(),
+        toast_counter: 0,
+        latest_toast: None,
     }))
 }

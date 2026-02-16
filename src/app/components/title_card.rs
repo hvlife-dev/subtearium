@@ -13,7 +13,7 @@ pub fn TitleCard(
                 <div class="title-sub">{subtitle}</div>
             </div>
             
-            {move || icon.clone().map(|i| view! {
+            {icon.map(|i| view! {
                 <div class="title-icon">{i}</div>
             })}
         </div>

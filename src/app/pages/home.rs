@@ -4,7 +4,7 @@ use crate::app::components::{
     title_card::TitleCard,
     stat_card::StatCard,
     log_viewer::LiveLogViewer,
-    divider::Divider
+    divider::Divider,
 };
 
 #[component]
@@ -12,7 +12,7 @@ pub fn HomePage() -> impl IntoView {
     let engine = use_engine();
 
     view! {
-        <div class="container" style="padding: 2rem; max-width: 800px; margin: 0 auto;">
+        <div class="page-container">
 
             <Transition fallback=|| "Connecting to Database...">
                 {move || engine.status.get().map(|res| match res {
@@ -27,10 +27,6 @@ pub fn HomePage() -> impl IntoView {
                             <StatCard 
                                 label="Total amount of songs in database" 
                                 value=data.songs_amount.to_string() 
-                            />
-                            <StatCard 
-                                label="Songs that already had lyrics"
-                                value=data.songs_predating.to_string() 
                             />
                             <StatCard 
                                 label="Songs with synced lyrics"
@@ -61,7 +57,7 @@ pub fn HomePage() -> impl IntoView {
                     }.into_any(),
                     
                     Err(e) => view! { 
-                        <div class="card" style="border-color: #EE6D85;">
+                        <div class="card error">
                             "Connection Error: " {e.to_string()}
                         </div>
                     }.into_any()

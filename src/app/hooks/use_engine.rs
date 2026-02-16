@@ -11,8 +11,10 @@ pub struct EngineController {
     pub set_workdir: Callback<String>,
     pub set_interval: Callback<i32>,
     pub set_nuke: Callback<bool>,
-    pub set_destructive: Callback<bool>,
     pub set_savetrig: Callback<bool>,
+    pub set_enable_synced: Callback<bool>,
+    pub set_enable_plain: Callback<bool>,
+    pub offset_lyric: Callback<(String, f32)>,
 }
 
 pub fn use_engine() -> EngineController {
@@ -30,7 +32,7 @@ pub fn use_engine() -> EngineController {
     let set_active = Callback::new(move |new_val: bool| {
         dispatch.dispatch(EngineCommand::Active(new_val));
         status.update(|data| {
-            if let Some(Ok(ref mut state)) = data {
+            if let Some(Ok(state)) = data {
                 state.active = new_val;
             }
         });
@@ -40,28 +42,18 @@ pub fn use_engine() -> EngineController {
     let set_nuke = Callback::new(move |new_val: bool| {
         dispatch.dispatch(EngineCommand::Nuke(new_val));
         status.update(|data| {
-            if let Some(Ok(ref mut state)) = data {
+            if let Some(Ok(state)) = data {
                 state.nuke = new_val;
             }
         });
         set_timeout(move || status.refetch(), std::time::Duration::from_millis(200));
     });
     
-    let set_destructive = Callback::new(move |new_val: bool| {
-        dispatch.dispatch(EngineCommand::Destructive(new_val));
-        status.update(|data| {
-            if let Some(Ok(ref mut state)) = data {
-                state.destructive = new_val;
-            }
-        });
-        set_timeout(move || status.refetch(), std::time::Duration::from_millis(200));
-    });
-
     let set_workdir = Callback::new(move |new_query: String| {
         dispatch.dispatch(EngineCommand::Workdir(new_query.clone()));
         
         status.update(|data| {
-            if let Some(Ok(ref mut state)) = data {
+            if let Some(Ok(state)) = data {
                 state.workdir = new_query;
             }
         });
@@ -74,7 +66,7 @@ pub fn use_engine() -> EngineController {
         dispatch.dispatch(EngineCommand::Interval(safe_val));
 
         status.update(|data| {
-            if let Some(Ok(ref mut state)) = data {
+            if let Some(Ok(state)) = data {
                 state.interval = safe_val;
             }
         });
@@ -84,8 +76,38 @@ pub fn use_engine() -> EngineController {
     let set_savetrig = Callback::new(move |new_val: bool| {
         dispatch.dispatch(EngineCommand::SaveTrig(new_val));
         status.update(|data| {
-            if let Some(Ok(ref mut state)) = data {
+            if let Some(Ok(state)) = data {
                 state.save_trig = new_val;
+            }
+        });
+        set_timeout(move || status.refetch(), std::time::Duration::from_millis(200));
+    });
+    
+    let set_enable_synced = Callback::new(move |new_val: bool| {
+        dispatch.dispatch(EngineCommand::EnableSynced(new_val));
+        status.update(|data| {
+            if let Some(Ok(state)) = data {
+                state.enable_synced = new_val;
+            }
+        });
+        set_timeout(move || status.refetch(), std::time::Duration::from_millis(200));
+    });
+
+    let set_enable_plain = Callback::new(move |new_val: bool| {
+        dispatch.dispatch(EngineCommand::EnablePlain(new_val));
+        status.update(|data| {
+            if let Some(Ok(state)) = data {
+                state.enable_plain = new_val;
+            }
+        });
+        set_timeout(move || status.refetch(), std::time::Duration::from_millis(200));
+    });
+    
+    let offset_lyric = Callback::new(move |(path, offset): (String, f32)| {
+        dispatch.dispatch(EngineCommand::OffsetLyric(path.clone(), offset));
+        status.update(|data| {
+            if let Some(Ok(state)) = data {
+                state.offset_lyric = Some((path, offset));
             }
         });
         set_timeout(move || status.refetch(), std::time::Duration::from_millis(200));
@@ -97,7 +119,9 @@ pub fn use_engine() -> EngineController {
         set_workdir,
         set_interval,
         set_nuke,
-        set_destructive,
-        set_savetrig
+        set_savetrig,
+        set_enable_synced,
+        set_enable_plain,
+        offset_lyric
     }
 }

@@ -1,5 +1,7 @@
 use leptos::prelude::*;
 
+use crate::app::components::divider::Divider;
+
 #[component]
 pub fn BufferedPanel(
     #[prop(into)] title: String,
@@ -7,14 +9,14 @@ pub fn BufferedPanel(
     children: Children,
 ) -> impl IntoView {
     view! {
-        <div class="card" style="border: 1px solid #4C566A;">
+        <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <h3>{title}</h3>
             </div>
 
             {children()}
 
-            <hr style="border-color: #333; margin: 1.5rem 0;"/>
+            <Divider/>
 
             <button 
                 class="btn-primary"

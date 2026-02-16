@@ -10,6 +10,7 @@ mod components;
 mod hooks;
 use crate::app::pages::home::HomePage;
 use crate::app::pages::settings::Settings;
+use crate::app::pages::status::Status;
 use crate::app::components::navbar::Navbar;
 
 
@@ -43,6 +44,7 @@ pub fn App() -> impl IntoView {
             <Routes fallback=|| "Page not found.".into_view()>
                 <ParentRoute path=path!("/") view=Navbar>
                     <Route path=path!("") view=HomePage/>
+                    <Route path=path!("status") view=Status/>
                     <Route path=path!("settings") view=Settings/>
                 </ParentRoute>
             </Routes>

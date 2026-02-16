@@ -4,16 +4,13 @@ use leptos::prelude::*;
 pub fn StatCard(
     #[prop(into)] label: String,
     #[prop(into)] value: String,
-    #[prop(into, optional)] color: Option<String>,
+    #[prop(into, optional)] accent_class: Option<String>,
 ) -> impl IntoView {
-    let accent = color.unwrap_or_else(|| "#61AFEF".to_string());
+    let accent = accent_class.unwrap_or_else(|| "accent-blue".to_string());
 
     view! {
-        <div 
-            class="stat-card"
-            style=format!("border-top: 3px solid {};", accent)
-        >
-            <div class="stat-value" style=format!("color: {};", accent)>
+        <div class=format!("stat-card {}", accent)>
+            <div class="stat-value">
                 {value}
             </div>
             <div class="stat-label">

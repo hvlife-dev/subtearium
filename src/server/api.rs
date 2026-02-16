@@ -29,7 +29,7 @@ pub async fn send_command(cmd: EngineCommand) -> Result<(), ServerFnError> {
             data.workdir = v;
         },
         EngineCommand::Interval(v) => {
-            let clamped = v.max(1);
+            let clamped = v.max(0);
             data.interval = clamped;
         },
         EngineCommand::Active(v) => {
@@ -38,13 +38,20 @@ pub async fn send_command(cmd: EngineCommand) -> Result<(), ServerFnError> {
         EngineCommand::Nuke(v) => {
             data.nuke = v;
         },
-        EngineCommand::Destructive(v) => {
-            data.destructive = v;
-        },
         EngineCommand::SaveTrig(v) => {
             data.save_trig = v
+        },
+        EngineCommand::EnableSynced(v) => {
+            data.enable_synced = v;
+        },
+        EngineCommand::EnablePlain(v) => {
+            data.enable_plain = v;
+        },
+        EngineCommand::OffsetLyric(path, offset) => {
+            data.offset_lyric = Some((path, offset));
         }
     }
 
     Ok(())
 }
+

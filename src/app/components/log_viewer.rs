@@ -14,21 +14,11 @@ pub fn LiveLogViewer(
     });
 
     view! {
-        <div 
-            node_ref=log_ref
-            class="code-block"
-            style="
-                min-height: 100px;
-                max-height: 600px;
-                overflow-y: auto; 
-                display: flex; 
-                flex-direction: column-reverse;
-            "
-        >
+        <div node_ref=log_ref class="code-block log-viewer-scroll">
             <div style="display: flex; flex-direction: column;">
                 {logs.into_iter().map(|line| view! {
-                    <div style="font-family: monospace; font-size: 0.85rem; border-bottom: 1px solid #333; padding: 2px 0;">
-                        <span style="color: #61AFEF;">"> "</span>
+                    <div class="log-line">
+                        <span class="prompt">"> "</span>
                         {line}
                     </div>
                 }).collect_view()}
