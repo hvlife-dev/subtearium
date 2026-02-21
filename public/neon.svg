@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="td-cool-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38A89D" /> <stop offset="100%" stop-color="#95C561" /> </linearGradient>
+
+    <filter id="s-drop-shadow-v2" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#08090F" flood-opacity="0.8"/>
+    </filter>
+    
+    <clipPath id="top-clip-v2"><polygon points="-100,-100 600,-100 600,318 -100,450" /></clipPath>
+    <clipPath id="bottom-clip-v2"><polygon points="-100,450 600,318 600,868 -100,868" /></clipPath>
+    <path id="raw-s-shape-v2" d="M 70 84 L 430 84 L 430 204 L 190 204 L 190 324 L 430 324 L 430 684 L 70 684 L 70 564 L 310 564 L 310 444 L 70 444 Z" />
+  </defs>
+
+  <circle cx="512" cy="512" r="512" fill="#11121D"/>
+  
+  <circle cx="512" cy="512" r="501" stroke="url(#td-cool-grad)" stroke-width="22" fill="none"/>
+  
+  <circle cx="512" cy="512" r="338" fill="#1A1B2A" stroke="#1A1B2A" stroke-width="95"/>
+
+  <g transform="translate(512 512) scale(0.875) translate(-250 -384)" filter="url(#s-drop-shadow-v2)">
+      <g clip-path="url(#top-clip-v2)" transform="translate(-12, -12)">
+        <use href="#raw-s-shape-v2" fill="url(#td-cool-grad)" />
+      </g>
+      <g clip-path="url(#bottom-clip-v2)" transform="translate(12, 12)">
+        <use href="#raw-s-shape-v2" fill="url(#td-cool-grad)" />
+      </g>
+  </g>
+</svg>
