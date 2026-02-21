@@ -43,6 +43,7 @@ pub async fn run_lyrics_engine(state: AppState) {
         let mut data = state.write().unwrap();
         data.is_api_running = false;
         data.nuke = false;
+        data.toast_counter = 0;
     }
 
 
