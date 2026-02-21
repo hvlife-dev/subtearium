@@ -19,8 +19,6 @@ Before using, please backup your library, this service shouldn't affect files ot
 
 Docker is a preffered way of running Subtearium, here is example compose snippet:
 ```
-```
-```
   subtearium:
     container_name: subtearium
     image: hvlife/subtearium:latest
