@@ -189,7 +189,7 @@ input[type="number"] {
 
 .page-container {
   padding: 2rem;
-  max-width: 800px;
+  max-width: 1000px;
   margin: 0 auto;
   width: 100%;
 }
@@ -405,7 +405,7 @@ input[type="number"] {
    ========================================================================== */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); 
   gap: 1rem;
   width: 100%;       
   margin-left: auto; 
@@ -688,6 +688,7 @@ input[type="number"] {
 .text-error { color: $color-red; }
 .text-warning { color: $color-yellow; }
 .text-muted { color: $color-fg-muted; }
+.text-locked { color: $color-purple; }
 
 /* ==========================================================================
    10. MODAL & TOASTS
@@ -715,6 +716,67 @@ input[type="number"] {
   max-width: 90%;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
   animation: modal-pop 0.2s ease-out;
+}
+
+.modal-title {
+  margin-bottom: 0.5rem;
+  color: $color-blue;
+}
+
+.modal-path {
+  font-size: 0.8rem;
+  color: $color-fg-muted;
+  margin-bottom: 1.5rem;
+  word-break: break-all;
+}
+
+.modal-alert {
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  
+  strong {
+    font-weight: 700;
+  }
+
+  &.error {
+    color: $color-red;
+    background: rgba($color-red, 0.1);
+  }
+
+  &.warning {
+    color: $color-yellow;
+    background: rgba($color-yellow, 0.1);
+  }
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  
+  .flex-1 { flex: 1; }
+  .flex-2 { flex: 2; }
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid $color-fg-muted;
+  color: $color-fg-primary;
+  
+  &:hover {
+    background: rgba($color-fg-muted, 0.2);
+  }
+}
+
+.btn-warning-outline {
+  background: transparent;
+  border: 1px solid $color-yellow;
+  color: $color-yellow;
+
+  &:hover {
+    background: rgba($color-yellow, 0.1);
+  }
 }
 
 @keyframes modal-pop {

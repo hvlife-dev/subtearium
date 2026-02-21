@@ -89,6 +89,12 @@ pub fn LibraryExplorer(
                        count={get_count(Some(SongStatus::Unaccounted))}
                        on_click=move |_| set_filter.set(Some(SongStatus::Unaccounted)) 
                     />
+                    <FilterTab 
+                       label="Locked"
+                       active={move || filter_status.get() == Some(SongStatus::Locked)} 
+                       count={get_count(Some(SongStatus::Locked))}
+                       on_click=move |_| set_filter.set(Some(SongStatus::Locked)) 
+                    />
                 </div>
 
                 <input 
@@ -132,12 +138,17 @@ pub fn LibraryExplorer(
 
             {move || selected_item.get().map(|(path, status)| {
                 let engine_clone = engine.clone();
+                let engine_clone_2 = engine.clone();
                 view! {
                     <OffsetModal 
                         path=path
                         status=status
                         on_apply=move |(p, offset)| {
                             engine_clone.offset_lyric.run((p, offset));
+                            set_selected.set(None);
+                        }
+                        on_toggle_lock=move |p| {
+                            engine_clone_2.toggle_lock.run(p); 
                             set_selected.set(None);
                         }
                         on_cancel=move |_| set_selected.set(None)
@@ -174,6 +185,7 @@ fn StatusIcon(status: SongStatus) -> impl IntoView {
         SongStatus::TagErr   => ("text-error", "✕"),
         SongStatus::NoResult  => ("text-warning", "!"),
         SongStatus::Unaccounted  => ("text-muted", "-"),
+        SongStatus::Locked  => ("text-locked", "#"),
     };
     
     view! {

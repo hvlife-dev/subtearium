@@ -2,13 +2,14 @@ use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
 use std::{collections::{HashMap, VecDeque}, sync::{Arc, RwLock}};
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub enum SongStatus {
     Unaccounted = 0,
     TagErr = 1,
     NoResult = 2,
     Plain = 3,
     Synced = 4,
+    Locked = 5,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -21,6 +22,7 @@ pub enum EngineCommand {
     EnableSynced(bool),
     EnablePlain(bool),
     OffsetLyric(String, f32),
+    ToggleLock(String),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -33,6 +35,7 @@ pub struct GlobalState {
     pub enable_synced: bool,
     pub enable_plain: bool,
     pub offset_lyric: Option<(String, f32)>,
+    pub toggle_lock: Option<String>,
 
     pub songs_amount: i32,
     pub songs_synced: i32,
@@ -40,12 +43,15 @@ pub struct GlobalState {
     pub songs_noresult: i32,
     pub songs_tagerr: i32,
     pub songs_unaccounted: i32,
+    pub songs_locked: i32,
 
     pub scan_time: DateTime<Utc>,
     pub library: HashMap<String, SongStatus>,
     pub logs: VecDeque<String>,
     pub toast_counter: usize,
     pub latest_toast: Option<(u8, String)>,
+    pub disk_trigger: bool,
+    pub is_api_running: bool,
 
 }
 
@@ -61,6 +67,7 @@ pub fn init_state() -> AppState {
         enable_synced: true,
         enable_plain: true,
         offset_lyric: None,
+        toggle_lock: None,
 
         songs_amount: 0,
         songs_synced: 0,
@@ -68,11 +75,14 @@ pub fn init_state() -> AppState {
         songs_noresult: 0,
         songs_tagerr: 0,
         songs_unaccounted: 0,
+        songs_locked: 0,
 
         scan_time: Utc::now(),
         library: HashMap::new(),
         logs: VecDeque::new(),
         toast_counter: 0,
         latest_toast: None,
+        disk_trigger: false,
+        is_api_running: false,
     }))
 }

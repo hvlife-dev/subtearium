@@ -15,6 +15,7 @@ pub struct EngineController {
     pub set_enable_synced: Callback<bool>,
     pub set_enable_plain: Callback<bool>,
     pub offset_lyric: Callback<(String, f32)>,
+    pub toggle_lock: Callback<String>,
 }
 
 pub fn use_engine() -> EngineController {
@@ -112,6 +113,16 @@ pub fn use_engine() -> EngineController {
         });
         set_timeout(move || status.refetch(), std::time::Duration::from_millis(200));
     });
+    
+    let toggle_lock = Callback::new(move |path: String| {
+        dispatch.dispatch(EngineCommand::ToggleLock(path.clone()));
+        status.update(|data| {
+            if let Some(Ok(state)) = data {
+                state.toggle_lock = Some(path);
+            }
+        });
+        set_timeout(move || status.refetch(), std::time::Duration::from_millis(200));
+    });
 
     EngineController {
         status,
@@ -122,6 +133,7 @@ pub fn use_engine() -> EngineController {
         set_savetrig,
         set_enable_synced,
         set_enable_plain,
-        offset_lyric
+        offset_lyric,
+        toggle_lock
     }
 }

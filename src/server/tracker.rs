@@ -1,5 +1,5 @@
 use crate::server::{misc::{log, is_synced}, state::{AppState, GlobalState, SongStatus}};
-use std::{fs::File, io::{Read, Write}, path::Path};
+use std::{collections::HashMap, fs::File, io::{Read, Write}, path::Path};
 use walkdir::WalkDir;
 use std::fs;
 
@@ -23,19 +23,17 @@ pub fn update_library(root_path: &str, state: &AppState, quick: bool) -> bool {
             let binding = e.path().with_extension("lrc");
             let p = Path::new(binding.as_path());
             if let Some(st) = e.path().to_str() {
-                if p.exists() {
-                    if !quick {
-                        if is_synced(p) {
-                            let _ = library.try_insert(st.to_string(), SongStatus::Synced);
-                        } else {
-                            let _ = library.try_insert(st.to_string(), SongStatus::Plain);
-                        }
+                if !p.exists() {
+                    update_entry(&mut library, st.to_string(), SongStatus::Unaccounted);
+                } else if !quick {
+                    if is_synced(p) {
+                        update_entry(&mut library, st.to_string(), SongStatus::Synced);
+                    } else {
+                        update_entry(&mut library, st.to_string(), SongStatus::Plain);
                     }
-                } else {
-                    let _ = library.try_insert(st.to_string(), SongStatus::Unaccounted);
                 }
             }
-        } )
+        })
     ;
     
     let mut data = state.write().unwrap();
@@ -45,34 +43,14 @@ pub fn update_library(root_path: &str, state: &AppState, quick: bool) -> bool {
     diff
 }
 
-pub fn init_library(root_path: &str, state: &AppState) -> std::io::Result<()> {
-    log(state, 1, "Initializing service database");
-    let allowed = [
-        "mp3", "mp4", "m4a", "flac"
-    ];
-    
-    let library = WalkDir::new(root_path).into_iter()
-        .filter_map(|e| e.ok() )
-        .filter(|e| e.path().is_file() )
-        .filter(|e| allowed.contains( &e.path().extension().and_then(|e| e.to_str() ).unwrap_or("nil") ))
-        .filter_map(|e| {
-            let binding = e.path().with_extension("lrc");
-            let p = Path::new(binding.as_path());
-            if !p.exists() {
-                e.path().to_str().map(|s| (s.to_string(), SongStatus::Unaccounted))
-            } else if is_synced(p) {
-                e.path().to_str().map(|s| (s.to_string(), SongStatus::Synced))
-            } else {
-                e.path().to_str().map(|s| (s.to_string(), SongStatus::Plain))
-            }
-        } )
-        .collect()
-    ;
-    
-    let mut data = state.write().unwrap();
-    data.library = library;
-
-    Ok(())
+fn update_entry(library: &mut HashMap<String, SongStatus>, path: String, status: SongStatus){
+    if let Some(entry) = library.get_mut(&path){
+        if *entry != SongStatus::Locked {
+            *entry = status;
+        }
+    } else {
+        library.insert(path, status);
+    }
 }
 
 pub fn save_library(state: &AppState) -> bool {

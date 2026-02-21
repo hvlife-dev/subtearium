@@ -7,5 +7,6 @@ services:
     ports:
       - "2137:2137"
     volumes:
+      - /home/domino/code/docker_dev/subtearium:/app/data:rw
       - /home/domino/Music:/music:rw
     restart: unless-stopped

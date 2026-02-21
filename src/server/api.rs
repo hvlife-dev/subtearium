@@ -49,7 +49,10 @@ pub async fn send_command(cmd: EngineCommand) -> Result<(), ServerFnError> {
         },
         EngineCommand::OffsetLyric(path, offset) => {
             data.offset_lyric = Some((path, offset));
-        }
+        },
+        EngineCommand::ToggleLock(v) => {
+            data.toggle_lock = Some(v);
+        },
     }
 
     Ok(())

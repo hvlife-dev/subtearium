@@ -48,6 +48,10 @@ pub fn HomePage() -> impl IntoView {
                                 label="New, not analyzed yet songs"
                                 value=data.songs_unaccounted.to_string() 
                             />
+                            <StatCard 
+                                label="Songs locked by user"
+                                value=data.songs_locked.to_string() 
+                            />
                         </div>
                         
                         <Divider text="Console Logs"/>

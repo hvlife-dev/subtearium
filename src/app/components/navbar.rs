@@ -11,31 +11,39 @@ use crate::app::components::toaster::{Toaster, ToastData};
 pub fn Navbar() -> impl IntoView {
     let engine = use_engine();
     let (toasts, set_toasts) = signal(Vec::<ToastData>::new());
-    let last_toast_id = RwSignal::new(0);
+    let last_toast_id = RwSignal::new(None::<usize>);
 
     Effect::new(move |_| {
         if let Some(Ok(data)) = engine.status.get() {
             let current_id = last_toast_id.get_untracked();
             
-            if data.toast_counter > current_id {
-                last_toast_id.set(data.toast_counter);
+            match current_id {
+                None => {
+                    last_toast_id.set(Some(data.toast_counter));
+                }
                 
-                if 
-                    let Some((level, msg)) = data.latest_toast.clone()
-                    && level > 0 
-                {
-                    let new_toast = ToastData { 
-                        id: data.toast_counter, 
-                        level, 
-                        message: msg 
-                    };
+                Some(current_id) => {
+                    if data.toast_counter > current_id {
+                        last_toast_id.set(Some(data.toast_counter));
                         
-                    set_toasts.update(|t| t.push(new_toast.clone()));
-                        
-                    let id_to_remove = new_toast.id;
-                    set_timeout(move || {
-                        set_toasts.update(|t| t.retain(|x| x.id != id_to_remove));
-                    }, std::time::Duration::from_millis(3500));
+                        if 
+                            let Some((level, msg)) = data.latest_toast.clone() 
+                            && level > 0 
+                        {
+                            let new_toast = ToastData { 
+                                id: data.toast_counter, 
+                                level, 
+                                message: msg 
+                            };
+                                
+                            set_toasts.update(|t| t.push(new_toast.clone()));
+                                
+                            let id_to_remove = new_toast.id;
+                            set_timeout(move || {
+                                set_toasts.update(|t| t.retain(|x| x.id != id_to_remove));
+                            }, std::time::Duration::from_millis(3500));
+                        }
+                    }
                 }
             }
         }
