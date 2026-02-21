@@ -8,6 +8,7 @@ Lyrics source is indispensable lrclib.
 Main features:
  * Support for sync, and plain lyrics (configurable)
  * Clear reporting of each library entry state
+ * Easy lyrics locking, to prevent overwrite of unwanted files
  * Quick sync correction, by shifting synced lyrics timestaps +/- seconds
  * New library entries detection
  * Automatic searching for missing or incomplete lyrics on time interval
