@@ -131,12 +131,28 @@ input[type="number"] {
 }
 
 .brand {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: $color-blue;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
   margin-bottom: 2rem;
-  padding-left: 0.8rem;
-  letter-spacing: 1px;
+  padding-top: 1rem;
+  
+  .brand-logo {
+    height: 8rem;
+    width: auto;
+    margin-bottom: 0.8rem;
+    filter: drop-shadow(0 0 8px rgba($color-cyan, 0.4));
+  }
+
+  .brand-text {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: $color-cyan;
+    letter-spacing: 4px; 
+    text-transform: uppercase;
+    filter: drop-shadow(0 0 8px rgba($color-cyan, 0.4));
+  }
 }
 
 .nav-link {

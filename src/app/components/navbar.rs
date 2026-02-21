@@ -45,7 +45,8 @@ pub fn Navbar() -> impl IntoView {
         <div class="app-container">
             <nav class="sidebar">
                 <div class="brand">
-                    "Subtearium"
+                    <img src="/neon.svg" alt="Subtearium Logo" class="brand-logo" />
+                    <span class="brand-text">"Subtearium"</span>
                 </div>
 
                 <div style="display: flex; flex-direction: column; gap: 0.5rem;">

@@ -1,5 +1,5 @@
 use leptos::prelude::*;
-use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
+use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title, Link};
 use leptos_router::{
     components::{Route, Router, Routes, ParentRoute},
     path
@@ -21,6 +21,7 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
             <head>
                 <meta charset="utf-8"/>
                 <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                
                 <AutoReload options=options.clone() />
                 <HydrationScripts options/>
                 <MetaTags/>
@@ -39,6 +40,7 @@ pub fn App() -> impl IntoView {
     view! {
         <Stylesheet id="leptos" href="/pkg/subtearium.css"/>
         <Title text="Subtearium"/>
+        <Link rel="icon" type_="image/x-icon" href="/favicon.ico"/>
 
         <Router>
             <Routes fallback=|| "Page not found.".into_view()>
