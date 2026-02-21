@@ -39,6 +39,12 @@ pub async fn run_lyrics_engine(state: AppState) {
         }
     });
 
+    { // to prevent reboot deadlock
+        let mut data = state.write().unwrap();
+        data.is_api_running = false;
+        data.nuke = false;
+    }
+
 
     loop {
         let active;
@@ -58,7 +64,7 @@ pub async fn run_lyrics_engine(state: AppState) {
                 Utc::now().signed_duration_since(data.scan_time).num_minutes() > data.interval as i64;
 
             save_trig = data.save_trig; if save_trig {data.save_trig=false;}
-            nuke = data.nuke; if nuke {data.nuke=false;}
+            nuke = data.nuke; // reset inside thread
             offset_lyric = data.offset_lyric.take();
             toggle_lock = data.toggle_lock.take();
             disk_trigger = data.disk_trigger; if disk_trigger {data.disk_trigger=false;}
@@ -71,6 +77,7 @@ pub async fn run_lyrics_engine(state: AppState) {
             {
                 let mut data = state.write().unwrap();
                 data.is_api_running = true;
+                data.nuke = false;
             }
 
             let bg_state = state.clone();
