@@ -1,0 +1,11 @@
+services:
+  subtearium:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: subtearium
+    ports:
+      - "2137:2137"
+    volumes:
+      - /home/domino/Music:/music:rw
+    restart: unless-stopped

@@ -53,7 +53,7 @@ pub type AppState = Arc<RwLock<GlobalState>>;
 
 pub fn init_state() -> AppState {
     Arc::new(RwLock::new(GlobalState {
-        workdir: "default".to_string(),
+        workdir: "/music".to_string(),
         interval: 3,
         active: false,
         nuke: false,

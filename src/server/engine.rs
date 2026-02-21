@@ -11,7 +11,7 @@ use crate::server::misc::{log, shift_lrc_timestamps};
 pub async fn run_lyrics_engine(state: AppState) {
 
     if !read_library(&state) {
-        let path = "/Music";
+        let path = "/music";
         let _ = init_library(path, &state);
         let _ = update_stats(&state);
         save_library(&state);
