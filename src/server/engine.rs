@@ -35,7 +35,7 @@ pub async fn run_lyrics_engine(state: AppState) {
                 data.disk_trigger = true; 
             }
             
-            sleep(Duration::from_secs(10)).await;
+            sleep(Duration::from_secs(120)).await;
         }
     });
 
@@ -79,13 +79,9 @@ pub async fn run_lyrics_engine(state: AppState) {
             tokio::spawn(async move {
                 log(&bg_state, 1, "Begin library API search");
                 
-                if nuke {
-                    update_library(&bg_path, &bg_state, false);
-                    let _ = update_stats(&bg_state);
-                }
-
+                update_library(&bg_path, &bg_state, false);
+                let _ = update_stats(&bg_state);
                 let _ = search_missing(&bg_state).await;
-                
                 let _ = update_stats(&bg_state);
                 save_library(&bg_state);
 
