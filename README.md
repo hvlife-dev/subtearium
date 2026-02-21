@@ -2,7 +2,8 @@
 
 ## An arr* stack element, responsible for downloading, handling, and editing music subtitles
 
-Dev stack is based on Rust + Leptos + Axum, and lyrics source is indispensable lrclib.
+Dev stack is based on Rust + Leptos + Axum. 
+Lyrics source is indispensable lrclib.
 
 Main features:
  * Support for sync, and plain lyrics (configurable)
