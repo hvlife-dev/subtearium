@@ -489,6 +489,59 @@ input[type="number"] {
   }
 }
 
+
+.status-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%; 
+  
+  .status-value {
+    font-size: 1.4rem; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    transition: color 0.3s ease;
+    
+    margin-bottom: 0.25rem; 
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+  }
+
+  &.is-idle {
+    .status-dot {
+      background-color: $color-fg-muted;
+    }
+  }
+
+  &.is-running {
+    border-top-color: $color-orange !important; 
+    
+    .status-value {
+      color: $color-orange;
+    }
+
+    .status-dot {
+      background-color: $color-orange;
+      animation: pulse-dot 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+  }
+}
+
+@keyframes pulse-dot {
+  0% { box-shadow: 0 0 0 0 rgba($color-orange, 0.6); }
+  70% { box-shadow: 0 0 0 10px rgba($color-orange, 0); }
+  100% { box-shadow: 0 0 0 0 rgba($color-orange, 0); }
+}
+
 /* ==========================================================================
    8. FOOTER
    ========================================================================== */

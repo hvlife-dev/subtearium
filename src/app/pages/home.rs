@@ -1,4 +1,5 @@
 use leptos::prelude::*;
+use crate::app::components::engine_card::EngineStatusCard;
 use crate::app::hooks::use_engine::use_engine;
 use crate::app::components::{
     title_card::TitleCard,
@@ -23,6 +24,9 @@ pub fn HomePage() -> impl IntoView {
                                 title="System Overview" 
                                 subtitle="Lyrics Statistics"
                                 icon="⚡"
+                            />
+                            <EngineStatusCard
+                                is_running=data.is_api_running
                             />
                             <StatCard 
                                 label="Total amount of songs in database" 

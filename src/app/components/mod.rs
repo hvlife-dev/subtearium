@@ -11,3 +11,4 @@ pub mod footer;
 pub mod library_explorer;
 pub mod offset_modal;
 pub mod toaster;
+pub mod engine_card;
