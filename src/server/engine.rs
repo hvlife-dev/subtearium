@@ -105,8 +105,6 @@ pub async fn run_lyrics_engine(state: AppState) {
             });
         }
 
-        
-        // if triggered database saving
         if save_trig {
             log(&state, 1, "Saved settings");
             save_library(&state);

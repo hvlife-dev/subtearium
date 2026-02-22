@@ -1,56 +1,69 @@
 use crate::server::{misc::{log, is_synced}, state::{AppState, GlobalState, SongStatus}};
-use std::{collections::HashMap, fs::File, io::{Read, Write}, path::Path};
+use std::{fs::File, io::{Read, Write}, path::Path};
 use walkdir::WalkDir;
 use std::fs;
 
 
 // soft-insert new songs
 pub fn update_library(root_path: &str, state: &AppState, quick: bool) -> bool {
-    let allowed = [
-        "mp3", "mp4", "m4a", "flac"
-    ];
+    let allowed = ["mp3", "mp4", "m4a", "flac"];
+    let mut change = false;
     
-    let mut library;
-    {
-        let data = state.read().unwrap();
-        library = data.library.clone();
-    }
     WalkDir::new(root_path).into_iter()
-        .filter_map(|e| e.ok() )
-        .filter(|e| e.path().is_file() )
-        .filter(|e| allowed.contains( &e.path().extension().and_then(|e| e.to_str() ).unwrap_or("nil") ))
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().is_file())
+        .filter(|e| allowed.contains(&e.path().extension().and_then(|e| e.to_str()).unwrap_or("nil")))
         .for_each(|e| { 
             let binding = e.path().with_extension("lrc");
             let p = Path::new(binding.as_path());
+            
             if let Some(st) = e.path().to_str() {
+                let path_str = st.to_string();
+                
                 if !p.exists() {
-                    update_entry(&mut library, st.to_string(), SongStatus::Unaccounted);
+                    if update_entry(state, path_str, SongStatus::Unaccounted) {
+                        change = true;
+                    }
                 } else if !quick {
                     if is_synced(p) {
-                        update_entry(&mut library, st.to_string(), SongStatus::Synced);
+                        update_entry(state, path_str, SongStatus::Synced);
                     } else {
-                        update_entry(&mut library, st.to_string(), SongStatus::Plain);
+                        update_entry(state, path_str, SongStatus::Plain);
                     }
                 }
             }
-        })
-    ;
-    
-    let mut data = state.write().unwrap();
-    let diff = data.library != library;
-    data.library = library;
-
-    diff
+        });
+        
+    change
 }
 
-fn update_entry(library: &mut HashMap<String, SongStatus>, path: String, status: SongStatus){
-    if let Some(entry) = library.get_mut(&path){
-        if *entry != SongStatus::Locked {
-            *entry = status;
+fn update_entry(state: &AppState, path: String, status: SongStatus) -> bool {
+    let mut data = state.write().unwrap();
+    let mut triggers_api = false;
+
+    if let Some(existing) = data.library.get_mut(&path) {
+        if *existing == SongStatus::Locked {
+            return false;
+        }
+
+        if 
+            status == SongStatus::Unaccounted
+            && (*existing == SongStatus::TagErr || *existing == SongStatus::NoResult) 
+        {
+            return false; 
+        }
+
+        if *existing != status {
+            *existing = status;
         }
     } else {
-        library.insert(path, status);
+        data.library.insert(path, status.clone());
+        if status == SongStatus::Unaccounted {
+            triggers_api = true;
+        }
     }
+
+    triggers_api
 }
 
 pub fn save_library(state: &AppState) -> bool {

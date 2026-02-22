@@ -67,16 +67,16 @@ pub async fn get_lyric(client: &Client, title: &str, artist: &str, album: &str, 
                         });
                     }
                     
-                    // Exponential backoff: Wait 2s, then 4s, etc., before retrying
-                    let backoff = attempt * 2; 
+                    let backoff = attempt * 3; 
                     sleep(Duration::from_secs(backoff as u64)).await;
                     continue; 
                     
                 } else {
+                    let code = response.status().as_u16();
                     return match response.json::<LrcError>().await {
                         Ok(err) => Err(err),
                         Err(e) => Err(LrcError {
-                            code: 2138, 
+                            code, 
                             name: "reqwest".to_string(), 
                             message: e.to_string()
                         }),
