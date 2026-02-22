@@ -29,7 +29,7 @@ pub async fn send_command(cmd: EngineCommand) -> Result<(), ServerFnError> {
             data.workdir = v;
         },
         EngineCommand::Interval(v) => {
-            let clamped = v.max(0);
+            let clamped = v.clamp(0, 144000);
             data.interval = clamped;
         },
         EngineCommand::Active(v) => {

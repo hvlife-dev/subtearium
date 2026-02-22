@@ -62,7 +62,7 @@ pub fn use_engine() -> EngineController {
     });
 
     let set_interval = Callback::new(move |new_val: i32| {
-        let safe_val = new_val.clamp(0, 100);
+        let safe_val = new_val.clamp(0, 144000);
         
         dispatch.dispatch(EngineCommand::Interval(safe_val));
 
