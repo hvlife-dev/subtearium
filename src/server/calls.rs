@@ -73,12 +73,13 @@ pub async fn get_lyric(client: &Client, title: &str, artist: &str, album: &str, 
                     
                 } else {
                     let code = response.status().as_u16();
-                    return match response.json::<LrcError>().await {
+                    let message = response.text().await.unwrap_or_default();
+                    return match serde_json::from_str::<LrcError>(&message) {
                         Ok(err) => Err(err),
-                        Err(e) => Err(LrcError {
+                        Err(_) => Err(LrcError {
                             code, 
-                            name: "reqwest".to_string(), 
-                            message: e.to_string()
+                            name: "ApiError".to_string(), 
+                            message
                         }),
                     };
                 }

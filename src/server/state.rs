@@ -50,7 +50,6 @@ pub struct GlobalState {
     pub logs: VecDeque<String>,
     pub toast_counter: usize,
     pub latest_toast: Option<(u8, String)>,
-    pub disk_trigger: bool,
     pub is_api_running: bool,
 
 }
@@ -60,7 +59,7 @@ pub type AppState = Arc<RwLock<GlobalState>>;
 pub fn init_state() -> AppState {
     Arc::new(RwLock::new(GlobalState {
         workdir: "/music".to_string(),
-        interval: 3,
+        interval: 60,
         active: false,
         nuke: false,
         save_trig: false,
@@ -82,7 +81,31 @@ pub fn init_state() -> AppState {
         logs: VecDeque::new(),
         toast_counter: 0,
         latest_toast: None,
-        disk_trigger: false,
         is_api_running: false,
     }))
+}
+
+pub struct ScannerGuard {
+    state: AppState,
+}
+
+impl ScannerGuard {
+    pub fn try_claim(state: AppState) -> Option<Self> {
+        let mut data = state.write().unwrap();
+        if !data.is_api_running {
+            data.is_api_running = true;
+            drop(data);
+            Some(Self { state })
+        } else {
+            None
+        }
+    }
+}
+
+impl Drop for ScannerGuard {
+    fn drop(&mut self) {
+        if let Ok(mut data) = self.state.write() {
+            data.is_api_running = false;
+        }
+    }
 }

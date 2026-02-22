@@ -1,13 +1,53 @@
-use crate::server::{misc::{log, is_synced}, state::{AppState, GlobalState, SongStatus}};
+use futures::stream::{self, StreamExt};
+use crate::server::{evaluator::search_single, misc::{is_synced, log}, state::{AppState, GlobalState, SongStatus}};
 use std::{fs::File, io::{Read, Write}, path::Path};
+use reqwest::Client;
 use walkdir::WalkDir;
 use std::fs;
 
 
-// soft-insert new songs
-pub fn update_library(root_path: &str, state: &AppState, quick: bool) -> bool {
+pub async fn update_single(root_path: &str, state: &AppState) {
     let allowed = ["mp3", "mp4", "m4a", "flac"];
-    let mut change = false;
+    let client = Client::new(); 
+    let concurrency_limit = 4;
+
+    let walker = WalkDir::new(root_path).into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().is_file())
+        .filter(|e| allowed.contains(&e.path().extension().and_then(|e| e.to_str()).unwrap_or("nil")));
+
+    stream::iter(walker)
+        .for_each_concurrent(concurrency_limit, |e| {
+            let client_clone = client.clone();
+            
+            async move {
+                let binding = e.path().with_extension("lrc");
+                let p = Path::new(binding.as_path());
+                
+                if let Some(st) = e.path().to_str() {
+                    let path_str = st.to_string();
+                    let is_new = {
+                        let data = state.read().unwrap();
+                        !p.exists() && !data.library.contains_key(&path_str)
+                    };
+                    
+                    if is_new {
+                        {
+                            let mut data = state.write().unwrap();
+                            data.library.insert(path_str.clone(), SongStatus::Unaccounted);
+                            data.songs_amount += 1;
+                            data.songs_unaccounted += 1;
+                        }
+                        let _ = search_single(state, &client_clone, &path_str).await;
+                    }
+                }
+            }
+        })
+        .await;
+}
+
+pub fn update_library(root_path: &str, state: &AppState) {
+    let allowed = ["mp3", "mp4", "m4a", "flac"];
     
     WalkDir::new(root_path).into_iter()
         .filter_map(|e| e.ok())
@@ -21,36 +61,29 @@ pub fn update_library(root_path: &str, state: &AppState, quick: bool) -> bool {
                 let path_str = st.to_string();
                 
                 if !p.exists() {
-                    if update_entry(state, path_str, SongStatus::Unaccounted) {
-                        change = true;
-                    }
-                } else if !quick {
-                    if is_synced(p) {
-                        update_entry(state, path_str, SongStatus::Synced);
-                    } else {
-                        update_entry(state, path_str, SongStatus::Plain);
-                    }
+                    update_entry(state, path_str, SongStatus::Unaccounted);
+                } else if is_synced(p) {
+                    update_entry(state, path_str, SongStatus::Synced);
+                } else {
+                    update_entry(state, path_str, SongStatus::Plain);
                 }
             }
         });
-        
-    change
 }
 
-fn update_entry(state: &AppState, path: String, status: SongStatus) -> bool {
+fn update_entry(state: &AppState, path: String, status: SongStatus) {
     let mut data = state.write().unwrap();
-    let mut triggers_api = false;
 
     if let Some(existing) = data.library.get_mut(&path) {
         if *existing == SongStatus::Locked {
-            return false;
+            return;
         }
 
         if 
             status == SongStatus::Unaccounted
             && (*existing == SongStatus::TagErr || *existing == SongStatus::NoResult) 
         {
-            return false; 
+            return; 
         }
 
         if *existing != status {
@@ -58,12 +91,7 @@ fn update_entry(state: &AppState, path: String, status: SongStatus) -> bool {
         }
     } else {
         data.library.insert(path, status.clone());
-        if status == SongStatus::Unaccounted {
-            triggers_api = true;
-        }
     }
-
-    triggers_api
 }
 
 pub fn save_library(state: &AppState) -> bool {
