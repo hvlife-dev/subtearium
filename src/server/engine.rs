@@ -2,6 +2,8 @@ use crate::server::state::{AppState, SongStatus};
 use crate::server::tracker::{read_library, save_library, update_library};
 use crate::server::calls::get_lyric;
 use std::path::PathBuf;
+use reqwest::Client;
+use futures::stream::{self, StreamExt};
 use tokio::time::{sleep, Duration};
 use audiotags::Tag;
 use chrono::Utc;
@@ -187,7 +189,7 @@ async fn search_missing(state: &AppState) -> std::io::Result<()> {
         songs = data.library.clone();
         enable_synced = data.enable_synced;
     }
-    let paths = songs.iter().filter_map(|s| {
+    let paths: Vec<&String> = songs.iter().filter_map(|s| {
         if 
             *s.1 >= SongStatus::Synced || 
             (*s.1 == SongStatus::Plain && !enable_synced)
@@ -196,24 +198,30 @@ async fn search_missing(state: &AppState) -> std::io::Result<()> {
         } else {
             Some(s.0)
         }
-    } );
+    } ).collect();
 
-    for path in paths {
-        if let Ok(status) = handle_song(state, path.clone().into()).await {
-            let mut data = state.write().unwrap();
-            if let Some(val) = data.library.get_mut(path) && status > *val {
-                *val = status;
+    let client = Client::new();
+    let concurrency_limit = 4;
+
+    stream::iter(paths).for_each_concurrent(concurrency_limit, |path| {
+        let state_clone = state.clone(); 
+        let client_clone = client.clone();
+            
+        async move {
+            if let Ok(status) = handle_song(&state_clone, &client_clone, path.clone().into()).await {
+                let mut data = state.write().unwrap();
+                if let Some(val) = data.library.get_mut(path) && status > *val {
+                    *val = status;
+                }
             }
         }
-    }
+    }).await;
 
     Ok(())
 }
 
 
-async fn handle_song(state: &AppState, path: PathBuf) -> std::io::Result<SongStatus> {
-    log(state, 0, &format!("\nProcessing song at: {}", path.to_str().unwrap_or("Logging err")));
-
+async fn handle_song(state: &AppState, client: &Client, path: PathBuf) -> std::io::Result<SongStatus> {
     let enable_syced;
     let enable_plain;
     {
@@ -232,20 +240,20 @@ async fn handle_song(state: &AppState, path: PathBuf) -> std::io::Result<SongSta
     let duration = tag.duration().unwrap_or_default().round() as u32;
     let duration = duration.to_string();
 
-    match get_lyric(title, artist, album, &duration).await {
+    match get_lyric(client, title, artist, album, &duration).await {
         Ok(track) => {
             let mut file = fs::File::create(path.with_extension("lrc")).await?;
         
             if enable_syced && let Some(lyrics) = track.synced_lyrics {
                 file.write_all(lyrics.as_bytes()).await?;
-                log(state, 0, "Found synced lyrics");
+                log(state, 0, &format!("\nFound synced lyrics for: {}", path.to_str().unwrap_or("Logging err")));
                 Ok(SongStatus::Synced)
             } else if enable_plain && let Some(lyrics) = track.plain_lyrics {
                 file.write_all(lyrics.as_bytes()).await?;
-                log(state, 0, "Found only plain lyrics");
+                log(state, 0, &format!("\nFound only plain lyrics for: {}", path.to_str().unwrap_or("Logging err")));
                 Ok(SongStatus::Plain)
             } else {
-                log(state, 0, "No result found");
+                log(state, 0, &format!("\nFound no results for: {}", path.to_str().unwrap_or("Logging err")));
                 Ok(SongStatus::NoResult)
             }
         },

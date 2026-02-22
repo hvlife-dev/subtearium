@@ -1,5 +1,6 @@
 use reqwest::Client;
 use serde::Deserialize;
+use tokio::time::{sleep, Duration};
 
 #[allow(unused)]
 #[derive(Debug, Deserialize, Clone)]
@@ -23,59 +24,77 @@ pub struct LrcError {
     pub message: String,
 }
 
-pub async fn get_lyric(title: &str, artist: &str, album: &str, duration: &str) -> Result<LrcTrack, LrcError> {
-    let client = Client::new();
+pub async fn get_lyric(client: &Client, title: &str, artist: &str, album: &str, duration: &str) -> Result<LrcTrack, LrcError> {
     let url = "https://lrclib.net/api/get";
 
     let params = [
-        ("artist_name", &artist),
-        ("track_name", &title),
-        ("album_name", &album),
-        ("duration", &duration),
+        ("artist_name", artist),
+        ("track_name", title),
+        ("album_name", album),
+        ("duration", duration),
     ];
 
-    let response_result = client
-        .get(url)
-        .query(&params)
-        .send()
-        .await;
+    let max_retries = 3;
+    let mut attempt = 0;
 
-    match response_result {
-        Ok(response) => {
-            if response.status().is_success() {
-                let body_text = response.text().await.unwrap_or_default();
+    loop {
+        attempt += 1;
 
-                match serde_json::from_str::<LrcTrack>(&body_text) {
-                    Ok(track) => {
-                        Ok(track)
-                    }
-                    Err(e) => {
-                        Err(LrcError{
+        let response_result = client
+            .get(url)
+            .query(&params)
+            .send()
+            .await;
+
+        match response_result {
+            Ok(response) => {
+                if response.status().is_success() {
+                    let body_text = response.text().await.unwrap_or_default();
+                    return match serde_json::from_str::<LrcTrack>(&body_text) {
+                        Ok(track) => Ok(track),
+                        Err(e) => Err(LrcError {
                             code: 2137, 
                             name: "serde".to_string(), 
-                            message: e.to_string()})
+                            message: e.to_string()
+                        }),
+                    };
+                } else if response.status().as_u16() == 429 {
+                    if attempt >= max_retries {
+                        return Err(LrcError {
+                            code: 429,
+                            name: "RateLimit".to_string(),
+                            message: "Max retries exceeded due to rate limiting.".to_string(),
+                        });
                     }
-                }
-            } else {
-                match response.json::<LrcError>().await {
-                    Ok(err) => {
-                        Err(err)
-                    },
-                    Err(e) => {
-                        Err(LrcError{
+                    
+                    // Exponential backoff: Wait 2s, then 4s, etc., before retrying
+                    let backoff = attempt * 2; 
+                    sleep(Duration::from_secs(backoff as u64)).await;
+                    continue; 
+                    
+                } else {
+                    return match response.json::<LrcError>().await {
+                        Ok(err) => Err(err),
+                        Err(e) => Err(LrcError {
                             code: 2138, 
                             name: "reqwest".to_string(), 
-                            message: e.to_string()})
-                    },
+                            message: e.to_string()
+                        }),
+                    };
                 }
             }
+            Err(e) => {
+                if attempt >= max_retries {
+                    return Err(LrcError {
+                        code: 2139, 
+                        name: "Network".to_string(), 
+                        message: e.to_string()
+                    });
+                }
+                
+                sleep(Duration::from_secs(2)).await;
+                continue;
+            }
         }
-        Err(e) => {
-            Err(LrcError{
-                code: 2139, 
-                name: "Network".to_string(), 
-                message: e.to_string()})
-
-        },
     }
 }
