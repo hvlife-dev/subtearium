@@ -45,7 +45,7 @@ pub fn Settings() -> impl IntoView {
                                 label="Force recheck of every lyric in library" 
                                 value=data.nuke
                                 on_toggle=engine.set_nuke
-                                on_text="Nuke"
+                                on_text="Scheduled"
                                 off_text="Nuke"
                             />
                         </div>
