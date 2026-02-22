@@ -843,3 +843,75 @@ input[type="number"] {
   from { transform: translateX(120%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
 }
+
+/* ==========================================================================
+   MOBILE OVERRIDES (Bottom Navigation)
+   ========================================================================== */
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    padding: 0.5rem;
+    border-right: none;
+    border-top: 1px solid $color-bg-lighter;
+    z-index: 100;
+    
+    background: $color-bg-surface;
+    box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .brand {
+    display: none;
+  }
+
+  .nav-links-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    width: 100%;
+    gap: 0.25rem;
+  }
+
+  .nav-link {
+    flex: 1;
+    text-align: center;
+    margin-bottom: 0;
+    padding: 0.8rem 0.2rem;
+    font-size: 0.9rem;
+    border-left: none;
+    border-bottom: 3px solid transparent;
+    border-radius: 6px 6px 0 0;
+
+    &[aria-current="page"] {
+      border-left-color: transparent;
+      border-bottom-color: $color-blue;
+      background-color: rgba(255, 255, 255, 0.03); 
+    }
+  }
+
+  .main-content {
+    padding-bottom: 80px; 
+  }
+  
+  .toast-container {
+    bottom: 80px;
+  }
+}
+
+/* ==========================================================================
+   DESKTOP NAV CONTAINER (for the class we just added)
+   ========================================================================== */
+@media (min-width: 769px) {
+  .nav-links-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

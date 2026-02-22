@@ -57,7 +57,7 @@ pub fn Navbar() -> impl IntoView {
                     <span class="brand-text">"Subtearium"</span>
                 </div>
 
-                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <div class="nav-links-container">
                     <A href="/" attr:class="nav-link" exact=true>
                         "Home"
                     </A>
