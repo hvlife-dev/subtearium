@@ -12,6 +12,7 @@ Main features:
  * Quick sync correction, by shifting synced lyrics timestaps +/- seconds
  * New library entries detection
  * Automatic searching for missing or incomplete lyrics on time interval
+ * Support for mobile UI
 
 This project is in beta stage, so breaking changes and unstability are to be expected.
 All contributions and suggestions are welcome, as well as bug reports.
@@ -36,6 +37,7 @@ Docker is a preffered way of running Subtearium, here is example compose snippet
 
 Upon starting you can access web UI at `0.0.0.0:2137`.
 
-You can run the project in dev mode with `cargo leptos watch`, more insight in the Leptos Axum tutorial.
+You can run the project in dev mode with `cargo leptos watch`, just make sure that your wasm-bindgen is correct version.
+More insight in the Leptos Axum tutorial.
 
 <img src="./public/neon.svg">

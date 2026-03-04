@@ -6,28 +6,27 @@ use crate::app::hooks::use_engine::EngineController;
 
 #[component]
 pub fn LibraryExplorer(
-    #[prop(into)] library: HashMap<String, SongStatus>,
+    #[prop(into)] library: Signal<HashMap<String, SongStatus>>, 
     engine: EngineController,
 ) -> impl IntoView {
     let (filter_status, set_filter) = signal(None::<SongStatus>);
     let (search_query, set_search) = signal("".to_string());
     let (selected_item, set_selected) = signal(None::<(String, SongStatus)>);
 
-    let lib_for_filter = library.clone();
-    let lib_for_count = library;
-
     let filtered_items = move || {
         let q = search_query.get().to_lowercase();
         let s = filter_status.get();
         
-        let mut items: Vec<_> = lib_for_filter.iter().collect();
-        items.sort_by_key(|(k, _)| *k);
+        let current_lib = library.get(); 
+        
+        let mut items: Vec<_> = current_lib.into_iter().collect();
+        items.sort_by_key(|(k, _)| k.clone());
 
         items
             .into_iter()
             .filter(|(path, status)| {
                 let status_match = match &s {
-                    Some(target) => *status == target,
+                    Some(target) => *status == *target,
                     None => true,
                 };
                 let search_match = if q.is_empty() {
@@ -37,22 +36,23 @@ pub fn LibraryExplorer(
                 };
                 status_match && search_match
             })
-            .map(|(k, v)| (k.clone(), v.clone())) 
             .collect::<Vec<(String, SongStatus)>>()
     };
 
     let get_count = move |target: Option<SongStatus>| {
-        lib_for_count.values().filter(|s| match &target {
-            Some(t) => *s == t,
-            None => true
-        }).count()
+        library.with(|lib| {
+            lib.values().filter(|s| match &target {
+                Some(t) => **s == *t,
+                None => true
+            }).count()
+        })
     };
 
     view! {
-        <div class="card" style="display: flex; flex-direction: column; height: clamp(400px, 80vh, 1200px); padding: 0; position: relative;">
+        <div class="card library-card">
             
-            <div class="filter-header" style="padding: 1rem; border-bottom: 1px solid #212234; background: #212234;">
-                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; overflow-x: auto;">
+            <div class="filter-header">
+                <div class="filter-tabs-wrapper">
                     <FilterTab 
                         label="All" 
                         active={move || filter_status.get().is_none()} 
@@ -100,35 +100,52 @@ pub fn LibraryExplorer(
                 <input 
                     type="text" 
                     class="form-control" 
-                    placeholder="Search paths..."
+                    placeholder="Search songs..."
                     on:input=move |ev| set_search.set(event_target_value(&ev))
                     prop:value=search_query
                 />
             </div>
 
-            <div style="flex: 1; overflow-y: auto; padding: 0;">
-                <ul style="list-style: none; margin: 0; padding: 0;">
+            <div class="library-list-wrapper">
+                <ul class="library-list">
                     <For
                         each=filtered_items
                         key=|(path, _)| path.to_string()
                         children=move |(path, status)| {
-                            let path_text = path.clone(); 
-                            let path_title = path.clone();
                             let click_path = path.clone();
                             let click_status = status.clone();
+
+                            let p = std::path::Path::new(&path);
+                            let file_name = p.file_name()
+                                .and_then(|n| n.to_str())
+                                .unwrap_or(&path)
+                                .to_string();
+                            let parent_dir = p.parent()
+                                .and_then(|parent| parent.to_str())
+                                .unwrap_or("")
+                                .to_string();
+                            let parent_display = if parent_dir.is_empty() { 
+                                "".to_string() 
+                            } else { 
+                                format!("{}/", parent_dir) 
+                            };
 
                             view! {
                                 <li 
                                     class="library-item" 
-                                    style="cursor: pointer;"
                                     on:click=move |_| {
                                         set_selected.set(Some((click_path.clone(), click_status.clone())));
                                     }
                                 >
                                     <StatusIcon status={status.clone()} />
-                                    <span class="path" title=path_title>
-                                        {path_text}
-                                    </span>
+                                    <div class="library-item-content">
+                                        <span class="library-item-name" title={file_name.clone()}>
+                                            {file_name.clone()}
+                                        </span>
+                                        <span class="library-item-path" title={parent_display.clone()}>
+                                            {parent_display.clone()}
+                                        </span>
+                                    </div>
                                 </li>
                             }
                         }

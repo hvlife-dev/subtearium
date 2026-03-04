@@ -1,5 +1,4 @@
 use leptos::prelude::*;
-use crate::server::state::GlobalState;
 use crate::app::hooks::use_engine::use_engine;
 use crate::app::components::library_explorer::LibraryExplorer;
 
@@ -7,25 +6,26 @@ use crate::app::components::library_explorer::LibraryExplorer;
 pub fn Status() -> impl IntoView {
     let engine = use_engine();
 
-    let form_latch = RwSignal::new(None::<GlobalState>);
-    Effect::new(move |_| {
-        if let Some(Ok(data)) = engine.status.get()
-            && form_latch.get_untracked().is_none() {
-                form_latch.set(Some(data));
-            }
+    let lib_sig = Signal::derive(move || {
+        engine.status.get()
+            .and_then(|res| res.ok())
+            .map(|data| data.library)
+            .unwrap_or_default()
     });
 
     view! {
         <div class="page-container">
-            <Transition fallback=|| "Loading Settings...">
-                {move || form_latch.get().map(|data| view! {
+            <Transition fallback=|| "Loading Library...">
+                <Show 
+                    when=move || !lib_sig.with(|lib| lib.is_empty()) 
+                    fallback=|| view! { <div class="card">"No songs found in library yet."</div> }
+                >
                     <LibraryExplorer 
-                        library=data.library
+                        library=lib_sig
                         engine=engine.clone()
                     />
-                })}
+                </Show>
             </Transition>
         </div>
     }
 }
-

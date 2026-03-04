@@ -42,11 +42,11 @@ pub fn Settings() -> impl IntoView {
                                 off_text="Dead"
                             />
                             <Toggle 
-                                label="Force recheck of every lyric in library" 
+                                label="Force recheck of incomplete files" 
                                 value=data.nuke
                                 on_toggle=engine.set_nuke
                                 on_text="Scheduled"
-                                off_text="Nuke"
+                                off_text="Recheck"
                             />
                         </div>
 

@@ -12,66 +12,68 @@ use crate::app::components::{
 pub fn HomePage() -> impl IntoView {
     let engine = use_engine();
 
+    let current_data = Signal::derive(move || {
+        engine.status.get().and_then(|res| res.ok())
+    });
+
+    let is_running_sig = Signal::derive(move || current_data.get().map(|d| d.is_api_running).unwrap_or(false));
+    let logs_sig = Signal::derive(move || current_data.get().map(|d| d.logs).unwrap_or_default());
+
     view! {
         <div class="page-container">
-
-            <Transition fallback=|| "Connecting to Database...">
-                {move || engine.status.get().map(|res| match res {
-                    Ok(data) => view! {
+            <Transition fallback=|| view!{ <div>"Connecting to Database..."</div> }>
+                
+                <Show 
+                    when=move || current_data.get().is_some()
+                    fallback=|| view! { 
+                        <div class="card error">"Connection Error!"</div> 
+                    }
+                >
+                    <div class="stats-grid">
+                        <TitleCard
+                            title="System Overview" 
+                            subtitle="Lyrics Statistics"
+                            icon="⚡"
+                        />
                         
-                        <div class="stats-grid">
-                            <TitleCard
-                                title="System Overview" 
-                                subtitle="Lyrics Statistics"
-                                icon="⚡"
-                            />
-                            <EngineStatusCard
-                                is_running=data.is_api_running
-                            />
-                            <StatCard 
-                                label="Total amount of songs in database" 
-                                value=data.songs_amount.to_string() 
-                            />
-                            <StatCard 
-                                label="Songs with synced lyrics"
-                                value=data.songs_synced.to_string() 
-                            />
-                            <StatCard 
-                                label="Songs with plain lyrics only"
-                                value=data.songs_plain.to_string() 
-                            />
-                            <StatCard 
-                                label="Songs with no lyrics available"
-                                value=data.songs_noresult.to_string() 
-                            />
-                            <StatCard 
-                                label="Badly tagged songs"
-                                value=data.songs_tagerr.to_string() 
-                            />
-                            <StatCard 
-                                label="New, not analyzed yet songs"
-                                value=data.songs_unaccounted.to_string() 
-                            />
-                            <StatCard 
-                                label="Songs locked by user"
-                                value=data.songs_locked.to_string() 
-                            />
-                        </div>
+                        <EngineStatusCard is_running=is_running_sig />
                         
-                        <Divider text="Console Logs"/>
-                        
-                        <LiveLogViewer logs=data.logs />
-
-                    }.into_any(),
+                        <StatCard 
+                            label="Total amount of songs in database" 
+                            value=move || current_data.get().map(|d| d.songs_amount.to_string()).unwrap_or_default()
+                        />
+                        <StatCard 
+                            label="Songs with synced lyrics"
+                            value=move || current_data.get().map(|d| d.songs_synced.to_string()).unwrap_or_default()
+                        />
+                        <StatCard 
+                            label="Songs with plain lyrics only"
+                            value=move || current_data.get().map(|d| d.songs_plain.to_string()).unwrap_or_default()
+                        />
+                        <StatCard 
+                            label="Songs with no lyrics available"
+                            value=move || current_data.get().map(|d| d.songs_noresult.to_string()).unwrap_or_default()
+                        />
+                        <StatCard 
+                            label="Badly tagged songs"
+                            value=move || current_data.get().map(|d| d.songs_tagerr.to_string()).unwrap_or_default()
+                        />
+                        <StatCard 
+                            label="New, not yet analyzed songs"
+                            value=move || current_data.get().map(|d| d.songs_unaccounted.to_string()).unwrap_or_default()
+                        />
+                        <StatCard 
+                            label="Songs locked by user"
+                            value=move || current_data.get().map(|d| d.songs_locked.to_string()).unwrap_or_default()
+                        />
+                    </div>
                     
-                    Err(e) => view! { 
-                        <div class="card error">
-                            "Connection Error: " {e.to_string()}
-                        </div>
-                    }.into_any()
-                })}
+                    <Divider text="Console Logs"/>
+                    
+                    <LiveLogViewer logs=logs_sig />
+
+                </Show>
             </Transition>
-            
         </div>
     }
 }

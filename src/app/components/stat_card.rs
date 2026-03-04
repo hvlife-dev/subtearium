@@ -3,7 +3,7 @@ use leptos::prelude::*;
 #[component]
 pub fn StatCard(
     #[prop(into)] label: String,
-    #[prop(into)] value: String,
+    value: impl IntoView + 'static, 
     #[prop(into, optional)] accent_class: Option<String>,
 ) -> impl IntoView {
     let accent = accent_class.unwrap_or_else(|| "accent-blue".to_string());
@@ -11,7 +11,7 @@ pub fn StatCard(
     view! {
         <div class=format!("stat-card {}", accent)>
             <div class="stat-value">
-                {value}
+                {value} 
             </div>
             <div class="stat-label">
                 {label}
