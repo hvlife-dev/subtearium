@@ -6,27 +6,28 @@ use crate::app::hooks::use_engine::EngineController;
 
 #[component]
 pub fn LibraryExplorer(
-    #[prop(into)] library: Signal<HashMap<String, SongStatus>>, 
+    #[prop(into)] library: HashMap<String, SongStatus>,
     engine: EngineController,
 ) -> impl IntoView {
     let (filter_status, set_filter) = signal(None::<SongStatus>);
     let (search_query, set_search) = signal("".to_string());
     let (selected_item, set_selected) = signal(None::<(String, SongStatus)>);
 
+    let lib_for_filter = library.clone();
+    let lib_for_count = library;
+
     let filtered_items = move || {
         let q = search_query.get().to_lowercase();
         let s = filter_status.get();
         
-        let current_lib = library.get(); 
-        
-        let mut items: Vec<_> = current_lib.into_iter().collect();
-        items.sort_by_key(|(k, _)| k.clone());
+        let mut items: Vec<_> = lib_for_filter.iter().collect();
+        items.sort_by_key(|(k, _)| *k);
 
         items
             .into_iter()
             .filter(|(path, status)| {
                 let status_match = match &s {
-                    Some(target) => *status == *target,
+                    Some(target) => *status == target,
                     None => true,
                 };
                 let search_match = if q.is_empty() {
@@ -36,16 +37,15 @@ pub fn LibraryExplorer(
                 };
                 status_match && search_match
             })
+            .map(|(k, v)| (k.clone(), v.clone())) 
             .collect::<Vec<(String, SongStatus)>>()
     };
 
     let get_count = move |target: Option<SongStatus>| {
-        library.with(|lib| {
-            lib.values().filter(|s| match &target {
-                Some(t) => **s == *t,
-                None => true
-            }).count()
-        })
+        lib_for_count.values().filter(|s| match &target {
+            Some(t) => *s == t,
+            None => true
+        }).count()
     };
 
     view! {

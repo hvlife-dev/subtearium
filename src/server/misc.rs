@@ -6,10 +6,10 @@ use std::path::Path;
 use crate::server::state::AppState;
 
 pub fn log(state: &AppState, level: u8, msg: &str) {
+    println!("{}", msg);
     let t = Utc::now();
     let formatted_msg = format!("{:02}:{:02}:{:02} UTC | {}", 
         t.hour(), t.minute(), t.second(), msg);
-    // println!("{}", formatted_msg);
 
     let mut data = state.write().unwrap();
     data.logs.push_back(formatted_msg);
