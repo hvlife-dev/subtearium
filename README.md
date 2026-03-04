@@ -1,27 +1,30 @@
 # Subtearium
 
-## An arr* stack element, responsible for downloading, handling, and editing music subtitles
+**Music lyrics manager that can run as a part of your \*arr stack server.**
 
-Dev stack is based on Rust + Leptos + Axum. 
-As a lyrics source it's using indispensable lrclib.
+Built with **Rust + Leptos + Axum**. It utilizes the indispensable [LRCLIB](https://lrclib.net/) as its primary lyrics source.
 
-Main features:
- * Lightweight
- * Support for sync, and plain lyrics (configurable)
- * Clear reporting of each library entry state
- * Easy lyrics locking, to prevent overwrite of unwanted files
- * Quick sync correction, by shifting synced lyrics timestaps +/- seconds
- * New library entries detection
- * Automatic searching for missing or incomplete lyrics on time interval
- * Support for mobile UI
+### Main Features
+* **Lightweight:** Minimal RAM and CPU footprint thanks to the Rust backend.
+* **Flexible Lyrics Support:** Configurable support for downloading both synced and plain text lyrics.
+* **Library Reporting:** Clear, visual reporting of the state of every entry in your library.
+* **Lyrics Locking:** Easily lock specific tracks to prevent the engine from overwriting manually added or custom files.
+* **Timestamp Shifting:** Quick sync correction allows you to shift synced lyrics timestamps forward or backward directly in the UI.
+* **Smart Searching:** Search instantly for new media entries, while using interval for incomplete ones.
+* **Responsive UI:** Fully functional mobile UI.
 
-This project is in beta stage, so breaking changes and unstability are to be expected.
-All contributions and suggestions are welcome, as well as bug reports.
-Before using, please backup your library, this service shouldn't affect files other than .lrc, but I don't wan't to be responsible for you losing your heavily collected data.
+> [!WARNING]
+> This project is currently in beta. Breaking changes and instability are to be expected.
+> **Please back up your library before using.** While this service is strictly designed to only create and modify `.lrc` files, I am not responsible for any accidental loss of your heavily curated media data. 
+
+---
 
 ## Setup
-Docker is a preffered way of running Subtearium, here is example compose snippet:
-```docker-compose
+
+Docker is the preferred way of running Subtearium. Below is an example `docker-compose.yml` snippet:
+
+```yaml
+services:
   subtearium:
     container_name: subtearium
     image: hvlife/subtearium:latest
@@ -31,22 +34,35 @@ Docker is a preffered way of running Subtearium, here is example compose snippet
     ports:
       - 2137:2137/tcp
     volumes:
-      - /docker/appdata/subtearium:/app/data:rw
-      - /mnt/data/media/music:/music:rw
+      - /docker/appdata/subtearium:/app/data:rw  # App config
+      - /mnt/data/media/music:/music:rw          # Your music library
     restart: unless-stopped
-
 ```
 
-Upon starting you can access web UI at `0.0.0.0:2137`.
+Upon starting the container, you can access the web UI at `http://<your-server-ip>:2137`.
 
-<img src="./public/readme_home.png">
-<img src="./public/readme_status.png">
-<img src="./public/readme_edit.png">
-<img src="./public/readme_settings.png">
+---
 
-## RAM usage comparison with over 10k songs
-<img src="./public/readme_dozzle.png">
+## Screenshots
+
+![Home Dashboard](./public/readme_home.png)
+![Status Page](./public/readme_status.png)
+![Edit Lyrics](./public/readme_edit.png)
+![Settings](./public/readme_settings.png)
+
+### RAM Usage Comparison (Over 10k songs)
+![Dozzle RAM Usage](./public/readme_dozzle.png)
+
+---
 
 ## Development
-You can run the project in dev mode with `cargo leptos watch`, just make sure that your wasm-bindgen is correct version.
-More insight in the Leptos Axum tutorial.
+
+You can run the project locally in development mode using `cargo-leptos`:
+
+```bash
+cargo leptos watch
+```
+
+*Note: Ensure your `wasm-bindgen` version matches the one used by your Leptos setup. For more insights into the architecture, check out the official [Leptos Axum page](https://leptos.dev).*
+
+**Contributing:** All contributions, suggestions, and bug reports are highly welcome.
