@@ -92,13 +92,13 @@ pub async fn run_lyrics_engine(state: AppState) {
             let bg_path = path.clone();
             tokio::spawn(async move {
                 let _active_guard = _guard;
-                log(&bg_state, 1, "Begin quick check for new files");
+                // log(&bg_state, 1, "Begin quick check for new files");
                 let client = Client::new();
 
                 update_library(&bg_path, &bg_state, Some(client)).await;
                 let _ = update_stats(&bg_state);
                 save_library(&bg_state);
-                log(&bg_state, 1, "Quick check complete");
+                // log(&bg_state, 1, "Quick check complete");
             });
         }
 

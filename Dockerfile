@@ -15,7 +15,8 @@ COPY . .
 
 RUN cargo leptos build --release -vv
 
-FROM rustlang/rust:nightly-alpine as runner
+# FROM rustlang/rust:nightly-alpine as runner
+FROM alpine:latest as runner
 
 WORKDIR /app
 
@@ -28,4 +29,5 @@ ENV LEPTOS_SITE_ADDR="0.0.0.0:2137"
 ENV LEPTOS_SITE_ROOT=./site
 EXPOSE 2137
 
+RUN apk add --no-cache tzdata libgcc
 CMD ["/app/subtearium"]
