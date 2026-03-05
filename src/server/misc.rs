@@ -1,4 +1,4 @@
-use chrono::{Timelike, Utc};
+use chrono::{Timelike, Local};
 use std::fs::{self, File};
 use std::io::{self, BufRead};
 use std::path::Path;
@@ -7,13 +7,13 @@ use crate::server::state::AppState;
 
 pub fn log(state: &AppState, level: u8, msg: &str) {
     println!("{}", msg);
-    let t = Utc::now();
-    let formatted_msg = format!("{:02}:{:02}:{:02} UTC | {}", 
+    let t = Local::now();
+    let formatted_msg = format!("{:02}:{:02}:{:02} | {}", 
         t.hour(), t.minute(), t.second(), msg);
 
     let mut data = state.write().unwrap();
     data.logs.push_back(formatted_msg);
-    if data.logs.len() > 64 {
+    if data.logs.len() > 256 {
         data.logs.pop_front();
     }
 
@@ -59,25 +59,27 @@ pub fn shift_lrc_timestamps(filepath: &str, offset_sec: f32) -> Result<(), Strin
     let mut result = String::new();
 
     for line in content.lines() {
-        if line.starts_with('[')
-            && let Some(end_idx) = line.find(']') {
-                let time_str = &line[1..end_idx];
-                let parts: Vec<&str> = time_str.split(':').collect();
+        if 
+            line.starts_with('[')
+            && let Some(end_idx) = line.find(']') 
+        {
+            let time_str = &line[1..end_idx];
+            let parts: Vec<&str> = time_str.split(':').collect();
                 
-                if parts.len() == 2
-                    && let (Ok(min), Ok(sec)) = (parts[0].parse::<f32>(), parts[1].parse::<f32>()) {
-                        let total_sec = min * 60.0 + sec + offset_sec;
-                        let new_total = total_sec.max(0.0);
-                        
-                        let new_min = (new_total / 60.0).floor() as i32;
-                        let new_sec = new_total % 60.0;
-                        
-                        let new_time_str = format!("[{:02}:{:05.2}]", new_min, new_sec);
-                        result.push_str(&new_time_str);
-                        result.push_str(&line[end_idx + 1..]);
-                        result.push('\n');
-                        continue;
-                    }
+            if parts.len() == 2
+                && let (Ok(min), Ok(sec)) = (parts[0].parse::<f32>(), parts[1].parse::<f32>()) {
+                    let total_sec = min * 60.0 + sec + offset_sec;
+                    let new_total = total_sec.max(0.0);
+                    
+                    let new_min = (new_total / 60.0).floor() as i32;
+                    let new_sec = new_total % 60.0;
+                    
+                    let new_time_str = format!("[{:02}:{:05.2}]", new_min, new_sec);
+                    result.push_str(&new_time_str);
+                    result.push_str(&line[end_idx + 1..]);
+                    result.push('\n');
+                    continue;
+                }
             }
         result.push_str(line);
         result.push('\n');

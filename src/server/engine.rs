@@ -1,6 +1,7 @@
 use crate::server::evaluator::{lock_lrc, offset_lrc, search_missing, update_stats};
 use crate::server::state::{AppState, ScannerGuard};
-use crate::server::tracker::{read_library, save_library, update_library, update_single};
+use crate::server::tracker::{cleanup, read_library, save_library, update_library};
+use reqwest::Client;
 use tokio::time::{sleep, Duration};
 use chrono::Utc;
 use crate::server::misc::log;
@@ -16,27 +17,11 @@ pub async fn run_lyrics_engine(state: AppState) {
         data.nuke = false;
         data.toast_counter = 0;
     }
+    let mut last_quick_scan = std::time::Instant::now();
 
     log(&state, 1, "Subtearium ready");
 
-
-    let disk_state = state.clone();
-    tokio::spawn(async move {
-        loop {
-            if let Some(_guard) = ScannerGuard::try_claim(disk_state.clone()) {
-                let path = disk_state.read().unwrap().workdir.clone();
-                
-                update_single(&path, &disk_state).await;
-                let _ = update_stats(&disk_state);
-                save_library(&disk_state);
-            }
-
-            sleep(Duration::from_secs(240)).await;
-        }
-    });
-
     loop {
-        let active;
         let path;
         let interval_trigger;
         let save_trig;
@@ -45,10 +30,11 @@ pub async fn run_lyrics_engine(state: AppState) {
         let toggle_lock;
         {
             let mut data = state.write().unwrap();
-            active = data.active;
             path = data.workdir.clone();
-            interval_trigger = active && data.interval > 0 && 
-                Utc::now().signed_duration_since(data.scan_time).num_minutes() > data.interval as i64;
+            interval_trigger = 
+                data.interval > 0 
+                && Utc::now().signed_duration_since(data.scan_time).num_minutes() > data.interval as i64
+            ;
 
             save_trig = data.save_trig; if save_trig {data.save_trig=false;}
             nuke = data.nuke; // reset inside thread
@@ -57,7 +43,8 @@ pub async fn run_lyrics_engine(state: AppState) {
         }
 
         let should_search = nuke || interval_trigger;
-
+        
+        // main search loop, if unactive it's only supposed to update file state
         if should_search && let Some(_guard) = ScannerGuard::try_claim(state.clone()) {
             {
                 let mut data = state.write().unwrap();
@@ -72,21 +59,49 @@ pub async fn run_lyrics_engine(state: AppState) {
                 let _active_guard = _guard;
                 log(&bg_state, 1, "Begin library API search");
                 
-                update_library(&bg_path, &bg_state);
+                cleanup(&bg_state);
+                update_library(&bg_path, &bg_state, None).await;
                 let _ = update_stats(&bg_state);
-                let _ = search_missing(&bg_state).await;
-                let _ = update_stats(&bg_state);
-                save_library(&bg_state);
 
+                let active = {
+                    bg_state.read().unwrap().active
+                };
+                if active {
+                    let _ = search_missing(&bg_state).await;
+                    let _ = update_stats(&bg_state);
+                }
+
+                save_library(&bg_state);
                 {
                     let mut data = bg_state.write().unwrap();
                     data.is_api_running = false;
                     data.scan_time = Utc::now();
                 }
-                
                 log(&bg_state, 1, "API search complete");
             });
         }
+
+        // almost-continously running check for new music files
+        if 
+            !should_search 
+            && last_quick_scan.elapsed().as_secs() >= 240 
+            && let Some(_guard) = ScannerGuard::try_claim(state.clone()) 
+        {
+            last_quick_scan = std::time::Instant::now();
+            let bg_state = state.clone();
+            let bg_path = path.clone();
+            tokio::spawn(async move {
+                let _active_guard = _guard;
+                log(&bg_state, 1, "Begin quick check for new files");
+                let client = Client::new();
+
+                update_library(&bg_path, &bg_state, Some(client)).await;
+                let _ = update_stats(&bg_state);
+                save_library(&bg_state);
+                log(&bg_state, 1, "Quick check complete");
+            });
+        }
+
 
         if save_trig {
             log(&state, 1, "Saved settings");

@@ -2,9 +2,10 @@ use crate::server::state::{AppState, SongStatus};
 use crate::server::tracker::save_library;
 use crate::server::calls::get_lyric;
 use std::path::PathBuf;
+use lofty::file::{AudioFile, TaggedFileExt};
+use lofty::tag::Accessor;
 use reqwest::Client;
 use futures::stream::{self, StreamExt};
-use audiotags::Tag;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
 use crate::server::misc::{log, shift_lrc_timestamps, is_synced};
@@ -136,34 +137,60 @@ pub async fn search_single(state: &AppState, client: &Client, path: &str) -> std
 
 
 pub async fn handle_song(state: &AppState, client: &Client, path: PathBuf) -> std::io::Result<SongStatus> {
-    let enable_syced;
+    let enable_synced;
     let enable_plain;
     {
         let data = state.read().unwrap();
-        enable_syced = data.enable_synced;
+        enable_synced = data.enable_synced;
         enable_plain = data.enable_plain;
     }
 
-    let tag = Tag::new().read_from_path(&path);
-    if tag.is_err() {return Ok(SongStatus::TagErr);}
-    let tag = tag.unwrap();
+    // to avoid blocking tokio with slow drives
+    let path_clone = path.clone();
+    let blocking_result = tokio::task::spawn_blocking(move || {
+        lofty::read_from_path(&path_clone)
+    }).await;
+    let tag = match blocking_result {
+        Ok(Ok(t)) => t, // Thread joined and file readed
+        _ => {
+            log(state, 0, &format!("Corrupted tags: {}", path.to_str().unwrap_or("Logging err")));
+            return Ok(SongStatus::TagErr);
+        }
+    };
 
-    let title = tag.title().unwrap_or_default();
-    let artist = tag.artist().unwrap_or_default();
-    let album = tag.album_title().unwrap_or_default();
-    let duration = tag.duration().unwrap_or_default().round() as u32;
+    let duration = tag.properties().duration().as_secs() as u32;
+    let primary = match tag.primary_tag() {
+        Some(t) => t,
+        None => {return Ok(SongStatus::TagErr)},
+    };
+    let title = primary.title().unwrap_or_default();
+    let artist = primary.artist().unwrap_or_default();
+    let album = primary.album().unwrap_or_default();
 
-    if title.trim().is_empty() || artist.trim().is_empty() || album.trim().is_empty() || duration < 3 {
-        log(state, 0, &format!("Missing tags: {}", path.to_str().unwrap_or("Logging err")));
+    if title.trim().is_empty() {
+        log(state, 0, &format!("Missing title: {} | {}", path.to_str().unwrap_or("Logging err"), title));
+        return Ok(SongStatus::TagErr);
+    } else if artist.trim().is_empty() {
+        log(state, 0, &format!("Missing artist: {} | {}", path.to_str().unwrap_or("Logging err"), artist));
+        return Ok(SongStatus::TagErr);
+    } else if album.trim().is_empty() {
+        log(state, 0, &format!("Missing album: {} | {}", path.to_str().unwrap_or("Logging err"), album));
+        return Ok(SongStatus::TagErr);
+    } else if !(3..=36000).contains(&duration) {
+        log(state, 0, &format!("Missing duration: {} | {}", path.to_str().unwrap_or("Logging err"), duration));
         return Ok(SongStatus::TagErr);
     }
     let duration = duration.to_string();
+    // if duration.chars().count() < 2 {
+    //     log(state, 0, &format!("Missing duration: {} | {}", path.to_str().unwrap_or("Logging err"), duration));
+    //     return Ok(SongStatus::TagErr);
+    // }
 
-    match get_lyric(client, title, artist, album, &duration).await {
+    match get_lyric(client, &title, &artist, &album, &duration).await {
         Ok(track) => {
             let mut file = fs::File::create(path.with_extension("lrc")).await?;
         
-            if enable_syced && let Some(lyrics) = track.synced_lyrics {
+            if enable_synced && let Some(lyrics) = track.synced_lyrics {
                 file.write_all(lyrics.as_bytes()).await?;
                 log(state, 0, &format!("\nFound synced lyrics: {}", path.to_str().unwrap_or("Logging err")));
                 Ok(SongStatus::Synced)
@@ -178,7 +205,11 @@ pub async fn handle_song(state: &AppState, client: &Client, path: PathBuf) -> st
         },
         Err(e) => {
             if e.code == 400 {
-                log(state, 0, &format!("Missing tags: {}", path.to_str().unwrap_or("Logging err")));
+                // log(state, 0, &format!("Missing tags: {}", path.to_str().unwrap_or("Logging err")));
+                log(state, 3, &format!(
+                    "400 api error: {} | {}. Sent -> Title: {}, Artist: {}, Album: {}, Duration: {}s", 
+                    e.message, path.to_str().unwrap_or("Logging err"), title, artist, album, duration
+                ));
                 Ok(SongStatus::TagErr)
             } else {
                 log(state, 0, &format!("Found no results: {}", path.to_str().unwrap_or("Logging err")));

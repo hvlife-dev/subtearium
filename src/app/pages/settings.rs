@@ -35,11 +35,11 @@ pub fn Settings() -> impl IntoView {
                         <div class="toggle-row">
                         
                             <Toggle 
-                                label="Enable lyrics pulling" 
+                                label="Enable .lrc files creation" 
                                 value=data.active
                                 on_toggle=engine.set_active
                                 on_text="Active"
-                                off_text="Dead"
+                                off_text="Scan-only"
                             />
                             <Toggle 
                                 label="Force recheck of incomplete files" 

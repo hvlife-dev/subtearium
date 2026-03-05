@@ -2,15 +2,27 @@ use futures::stream::{self, StreamExt};
 use crate::server::{evaluator::search_single, misc::{is_synced, log}, state::{AppState, GlobalState, SongStatus}};
 use std::{fs::File, io::{Read, Write}, path::Path};
 use reqwest::Client;
-use walkdir::WalkDir;
+use walkdir::{DirEntry, WalkDir};
 use std::fs;
 
+// remove key from library, if physical song disappeared
+pub fn cleanup(state: &AppState) {
+    let mut songs = {
+        state.read().unwrap().library.clone()
+    };
+    songs.retain(|key, _|{
+        let path = Path::new(key);
+        path.exists()
+    });
+    let mut data = state.write().unwrap();
+    data.library = songs;
+}
 
-pub async fn update_single(root_path: &str, state: &AppState) {
+// walk through every file in a library
+pub async fn update_library(root_path: &str, state: &AppState, search_new: Option<Client>) {
     let allowed = ["mp3", "mp4", "m4a", "flac"];
-    let client = Client::new(); 
     let concurrency_limit = 4;
-
+    
     let walker = WalkDir::new(root_path).into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.path().is_file())
@@ -18,79 +30,67 @@ pub async fn update_single(root_path: &str, state: &AppState) {
 
     stream::iter(walker)
         .for_each_concurrent(concurrency_limit, |e| {
-            let client_clone = client.clone();
+            let client_clone = search_new.clone();
             
             async move {
-                let binding = e.path().with_extension("lrc");
-                let p = Path::new(binding.as_path());
-                
-                if let Some(st) = e.path().to_str() {
-                    let path_str = st.to_string();
-                    let is_new = {
-                        let data = state.read().unwrap();
-                        !p.exists() && !data.library.contains_key(&path_str)
-                    };
-                    
-                    if is_new {
-                        {
-                            let mut data = state.write().unwrap();
-                            data.library.insert(path_str.clone(), SongStatus::Unaccounted);
-                            data.songs_amount += 1;
-                            data.songs_unaccounted += 1;
-                        }
-                        let _ = search_single(state, &client_clone, &path_str).await;
-                    }
+                let new = update_entry(state, &e);
+                let active = {state.read().unwrap().active};
+                if // change physical files only on those conditions
+                    active
+                    && let Some(client) = client_clone
+                    && new
+                    && let Some(path) = e.path().to_str()
+                {
+                    let _ = search_single(state, &client, path).await;
                 }
             }
-        })
-        .await;
+        }).await;
 }
 
-pub fn update_library(root_path: &str, state: &AppState) {
-    let allowed = ["mp3", "mp4", "m4a", "flac"];
-    
-    WalkDir::new(root_path).into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| e.path().is_file())
-        .filter(|e| allowed.contains(&e.path().extension().and_then(|e| e.to_str()).unwrap_or("nil")))
-        .for_each(|e| { 
-            let binding = e.path().with_extension("lrc");
-            let p = Path::new(binding.as_path());
-            
-            if let Some(st) = e.path().to_str() {
-                let path_str = st.to_string();
-                
-                if !p.exists() {
-                    update_entry(state, path_str, SongStatus::Unaccounted);
-                } else if is_synced(p) {
-                    update_entry(state, path_str, SongStatus::Synced);
-                } else {
-                    update_entry(state, path_str, SongStatus::Plain);
-                }
-            }
-        });
-}
+// returns, if that entry is new
+fn update_entry(state: &AppState, entry: &DirEntry) -> bool {
+    // checking which status should be assigned to that entry, based on lyric path
+    let status = {
+        let binding = entry.path().with_extension("lrc");
+        let lyric_path = Path::new(binding.as_path());
+        
+        if !lyric_path.exists() {
+            SongStatus::Unaccounted
+        } else if is_synced(lyric_path) {
+            SongStatus::Synced
+        } else {
+            SongStatus::Plain
+        }
+    };
 
-fn update_entry(state: &AppState, path: String, status: SongStatus) {
+    // getting music file path, it's used as library key
+    let path = if let Some(path) = entry.path().to_str() {
+        path.to_string()
+    } else {
+        return false;
+    };
+
     let mut data = state.write().unwrap();
 
     if let Some(existing) = data.library.get_mut(&path) {
         if *existing == SongStatus::Locked {
-            return;
+            return false;
         }
 
-        if 
+        if // allows for detecting lrc deletion, while preventing other causes to disappear
             status == SongStatus::Unaccounted
             && (*existing == SongStatus::TagErr || *existing == SongStatus::NoResult) 
         {
-            return; 
+            return false; 
         }
 
         if *existing != status {
             *existing = status;
         }
+        false
     } else {
         data.library.insert(path, status.clone());
+        true
     }
 }
 
