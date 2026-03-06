@@ -9,6 +9,7 @@ use crate::server::misc::log;
 pub async fn run_lyrics_engine(state: AppState) {
 
     if !read_library(&state) {
+        log(&state, 1, "Creating new service state file");
         save_library(&state);
     }
     { // to prevent reboot deadlock

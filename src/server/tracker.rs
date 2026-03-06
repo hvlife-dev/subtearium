@@ -113,17 +113,22 @@ pub fn read_library(state: &AppState) -> bool {
 
     if let Ok(mut file) = File::open("data/db.toml") {
         let mut toml = String::new();
-        if file.read_to_string(&mut toml).is_ok() 
-            && let Ok(decoded) = toml::from_str::<GlobalState>(&toml) {
+        if 
+            file.read_to_string(&mut toml).is_ok() 
+            && let Ok(decoded) = toml::from_str::<GlobalState>(&toml) 
+        {
             {
                 let mut data = state.write().unwrap();
                 *data = decoded;
             }
             log(state, 2, "Service state loaded succesfully");
             return true;
+        } else {
+            log(state, 3, "Invalid service state file");
         }
-    };
+    } else {
+        log(state, 3, "Service state file does not exist or is inaccessible");
+    }
     
-    log(state, 3, "Service state loading failure");
     false
 }
