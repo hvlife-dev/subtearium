@@ -97,9 +97,9 @@ pub async fn run_lyrics_engine(state: AppState) {
         }
 
         offset_lrc(&state, offset_lyric);
-        
+
         lock_lrc(&state, toggle_lock);
-        
+
         sleep(Duration::from_millis(100)).await;
     }
 }

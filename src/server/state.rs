@@ -1,8 +1,7 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local, Utc, Timelike};
 use reqwest::Client;
 use serde::{Serialize, Deserialize};
 use std::{collections::{HashMap, VecDeque}, sync::{Arc, RwLock}};
-use std::fs;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub enum SongStatus {
@@ -37,13 +36,6 @@ pub struct GlobalState {
     pub enable_synced: bool,
     pub enable_plain: bool,
     
-    #[serde(skip)]
-    pub offset_lyric: Option<(String, f32)>,
-    #[serde(skip)]
-    pub toggle_lock: Option<String>,
-    #[serde(skip)]
-    pub save_trig: bool,
-
     pub songs_amount: i32,
     pub songs_synced: i32,
     pub songs_plain: i32,
@@ -56,12 +48,13 @@ pub struct GlobalState {
     pub library: HashMap<String, SongStatus>,
     pub logs: VecDeque<String>,
     
-    #[serde(skip)]
+    pub offset_lyric: Option<(String, f32)>,
+    pub toggle_lock: Option<String>,
+    pub save_trig: bool,
     pub toast_counter: usize,
-    #[serde(skip)]
     pub latest_toast: Option<(u8, String)>,
-    #[serde(skip)]
     pub is_api_running: bool,
+    
     #[serde(skip)]
     pub client: Client
 }
@@ -111,28 +104,6 @@ impl Default for GlobalState {
 }
 
 pub type AppState = Arc<RwLock<GlobalState>>;
-
-pub fn init_state() -> AppState {
-    let _ = fs::create_dir_all("data");
-    let state = if let Ok(toml_str) = fs::read_to_string("data/db.toml") {
-        match toml::from_str::<GlobalState>(&toml_str) {
-            Ok(decoded) => {
-                println!("Service state loaded successfully");
-                decoded
-            }
-            Err(e) => {
-                println!("Failed to parse db.toml, using defaults. Error: {}", e);
-                GlobalState::default()
-            }
-        }
-    } else {
-        println!("No state file found, creating new defaults");
-        GlobalState::default()
-    };
-
-    Arc::new(RwLock::new(state))
-}
-
 pub struct ScannerGuard {
     state: AppState,
 }
@@ -157,3 +128,36 @@ impl Drop for ScannerGuard {
         }
     }
 }
+
+pub fn init_state() -> AppState {
+    let _ = std::fs::create_dir_all("data");
+    let t = Local::now();
+    let msg;
+
+    let mut state = if 
+        let Ok(toml_str) = std::fs::read_to_string("data/db.toml") 
+        && let Ok(state) = toml::from_str::<GlobalState>(&toml_str)
+    {
+        msg = "Service state succesfully loaded";
+        state
+    } else {
+        msg = "Service state invalid, overwriting";
+        GlobalState::default()
+    };
+
+    let formatted_msg = format!("{:02}:{:02}:{:02} | {}", 
+        t.hour(), t.minute(), t.second(), msg);
+    println!("{}", formatted_msg);
+    state.logs.push_back(formatted_msg);
+    if state.logs.len() > 256 {
+        state.logs.pop_front();
+    }
+
+    state.is_api_running = false;
+    state.toast_counter = 0;
+    state.latest_toast = None;
+    state.save_trig = false;
+    
+    Arc::new(RwLock::new(state))
+}
+

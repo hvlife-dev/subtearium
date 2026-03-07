@@ -1,9 +1,10 @@
 use futures::stream::{self, StreamExt};
 use std::path::Path;
 use walkdir::{DirEntry, WalkDir};
-use tokio::fs;
-use crate::server::{evaluator::search_single, misc::{is_synced, log}, state::{AppState, SongStatus}};
-
+use crate::server::state::{AppState, SongStatus};
+use crate::server::misc::is_synced;
+use crate::server::evaluator::search_single;
+use crate::server::misc::log;
 
 // remove key from library, if physical song disappeared
 pub fn cleanup(state: &AppState) {
@@ -107,15 +108,15 @@ fn update_entry(state: &AppState, entry: &DirEntry) -> bool {
     }
 }
 
-
 pub async fn save_library(state: &AppState) -> bool {
     let toml_result = {
         let data = state.read().unwrap();
         toml::to_string(&*data)
     };
+
     if let Ok(toml_string) = toml_result {
-        let _ = fs::create_dir_all("data").await;
-        if fs::write("data/db.toml", toml_string).await.is_ok() {
+        let _ = tokio::fs::create_dir_all("data").await;
+        if tokio::fs::write("data/db.toml", toml_string).await.is_ok() {
             return true;
         }
     }

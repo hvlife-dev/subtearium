@@ -52,6 +52,14 @@ Upon starting the container, you can access the web UI at `http://<your-server-i
 
 ### RAM Usage Comparison (Over 10k songs)
 ![Dozzle RAM Usage](./public/readme_dozzle.png)
+*Usually, in my case, it uses 5-15MB (as of version 0.3.1), however to be certain I need to finish wider tests.*
+
+---
+
+## Usage as a part of *arr stack
+On the server side, jellyfin, plex, and navidrome support serving .lrc files along with music.
+
+On client it depends, personally I'm using symfonium and it works flawlessly, plexamp apparently works too. With plain lyrics you have a "wall of text" during playback, but synced ones allow for near karaoke-like experience (it shows them line-by-line). For complete word-by-word display I'd need to add eLRC files support, which is something I want to do, but firstly I'm focusing on making subtearium more stable.
 
 ---
 
