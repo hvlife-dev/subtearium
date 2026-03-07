@@ -1,25 +1,15 @@
 use crate::server::evaluator::{lock_lrc, offset_lrc, search_missing, update_stats};
 use crate::server::state::{AppState, ScannerGuard};
-use crate::server::tracker::{cleanup, read_library, save_library, update_library};
-use reqwest::Client;
+use crate::server::tracker::{cleanup, save_library, update_library};
 use tokio::time::{sleep, Duration};
 use chrono::Utc;
 use crate::server::misc::log;
 
 pub async fn run_lyrics_engine(state: AppState) {
 
-    if !read_library(&state) {
-        log(&state, 1, "Creating new service state file");
-        save_library(&state);
-    }
-    { // to prevent reboot deadlock
-        let mut data = state.write().unwrap();
-        data.is_api_running = false;
-        data.nuke = false;
-        data.toast_counter = 0;
-    }
-    let mut last_quick_scan = std::time::Instant::now();
+    save_library(&state).await;
 
+    let mut last_quick_scan = std::time::Instant::now();
     log(&state, 1, "Subtearium ready");
 
     loop {
@@ -61,7 +51,7 @@ pub async fn run_lyrics_engine(state: AppState) {
                 log(&bg_state, 1, "Begin library API search");
                 
                 cleanup(&bg_state);
-                update_library(&bg_path, &bg_state, None).await;
+                update_library(&bg_path, &bg_state, false).await;
                 let _ = update_stats(&bg_state);
 
                 let active = {
@@ -72,7 +62,7 @@ pub async fn run_lyrics_engine(state: AppState) {
                     let _ = update_stats(&bg_state);
                 }
 
-                save_library(&bg_state);
+                save_library(&bg_state).await;
                 {
                     let mut data = bg_state.write().unwrap();
                     data.is_api_running = false;
@@ -94,19 +84,16 @@ pub async fn run_lyrics_engine(state: AppState) {
             tokio::spawn(async move {
                 let _active_guard = _guard;
                 // log(&bg_state, 1, "Begin quick check for new files");
-                let client = Client::new();
-
-                update_library(&bg_path, &bg_state, Some(client)).await;
+                update_library(&bg_path, &bg_state, true).await;
                 let _ = update_stats(&bg_state);
-                save_library(&bg_state);
+                save_library(&bg_state).await;
                 // log(&bg_state, 1, "Quick check complete");
             });
         }
 
-
         if save_trig {
             log(&state, 1, "Saved settings");
-            save_library(&state);
+            save_library(&state).await;
         }
 
         offset_lrc(&state, offset_lyric);

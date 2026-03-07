@@ -1,5 +1,4 @@
 use crate::server::state::{AppState, SongStatus};
-use crate::server::tracker::save_library;
 use crate::server::calls::get_lyric;
 use std::path::PathBuf;
 use lofty::file::{AudioFile, TaggedFileExt};
@@ -41,19 +40,20 @@ pub fn lock_lrc(state: &AppState, toggle_lock: Option<String>){
                 };
                 
                 data.library.insert(path.clone(), new_status);
+                data.save_trig = true;
                 
                 drop(data); 
                 log(state, 1, &format!("Unlocked: {}", path));
                 
             } else {
                 data.library.insert(path.clone(), SongStatus::Locked);
+                data.save_trig = true;
                 
                 drop(data);
                 log(state, 1, &format!("Locked: {}", path));
             }
+            let _ = update_stats(state);
         }
-        let _ = update_stats(state);
-        save_library(state);
     }
 }
 

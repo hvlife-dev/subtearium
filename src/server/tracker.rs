@@ -1,27 +1,40 @@
 use futures::stream::{self, StreamExt};
-use crate::server::{evaluator::search_single, misc::{is_synced, log}, state::{AppState, GlobalState, SongStatus}};
-use std::{fs::File, io::{Read, Write}, path::Path};
-use reqwest::Client;
+use std::path::Path;
 use walkdir::{DirEntry, WalkDir};
-use std::fs;
+use tokio::fs;
+use crate::server::{evaluator::search_single, misc::{is_synced, log}, state::{AppState, SongStatus}};
+
 
 // remove key from library, if physical song disappeared
 pub fn cleanup(state: &AppState) {
-    let mut songs = {
-        state.read().unwrap().library.clone()
+    let paths_to_check: Vec<String> = {
+        state.read().unwrap().library.keys().cloned().collect()
     };
-    songs.retain(|key, _|{
-        let path = Path::new(key);
-        path.exists()
-    });
-    let mut data = state.write().unwrap();
-    data.library = songs;
+
+    let mut missing_paths = Vec::new();
+    for path in paths_to_check {
+        if !Path::new(&path).exists() {
+            missing_paths.push(path);
+        }
+    }
+
+    if !missing_paths.is_empty() {
+        let mut data = state.write().unwrap();
+        for path in missing_paths {
+            data.library.remove(&path);
+        }
+    }
 }
 
 // walk through every file in a library
-pub async fn update_library(root_path: &str, state: &AppState, search_new: Option<Client>) {
+pub async fn update_library(root_path: &str, state: &AppState, search_new: bool) {
     let allowed = ["mp3", "mp4", "m4a", "flac"];
     let concurrency_limit = 4;
+    let base_client = if search_new {
+        Some(state.read().unwrap().client.clone())
+    } else {
+        None
+    };
     
     let walker = WalkDir::new(root_path).into_iter()
         .filter_map(|e| e.ok())
@@ -30,7 +43,7 @@ pub async fn update_library(root_path: &str, state: &AppState, search_new: Optio
 
     stream::iter(walker)
         .for_each_concurrent(concurrency_limit, |e| {
-            let client_clone = search_new.clone();
+            let client_clone = base_client.clone();
             
             async move {
                 let new = update_entry(state, &e);
@@ -94,41 +107,19 @@ fn update_entry(state: &AppState, entry: &DirEntry) -> bool {
     }
 }
 
-pub fn save_library(state: &AppState) -> bool {
-    let _ = fs::create_dir("data");
-    let data = state.read().unwrap().clone();
 
-    if let Ok(toml) = toml::to_string(&data)
-        && let Ok(mut file) = File::create("data/db.toml")
-            && file.write(toml.as_bytes()).is_ok() {
-                return true;
+pub async fn save_library(state: &AppState) -> bool {
+    let toml_result = {
+        let data = state.read().unwrap();
+        toml::to_string(&*data)
     };
-    
-    log(state, 3, "Saving service state failed");
-    false
-}
-
-pub fn read_library(state: &AppState) -> bool {
-    log(state, 0, "Loading service state");
-
-    if let Ok(mut file) = File::open("data/db.toml") {
-        let mut toml = String::new();
-        if 
-            file.read_to_string(&mut toml).is_ok() 
-            && let Ok(decoded) = toml::from_str::<GlobalState>(&toml) 
-        {
-            {
-                let mut data = state.write().unwrap();
-                *data = decoded;
-            }
-            log(state, 2, "Service state loaded succesfully");
+    if let Ok(toml_string) = toml_result {
+        let _ = fs::create_dir_all("data").await;
+        if fs::write("data/db.toml", toml_string).await.is_ok() {
             return true;
-        } else {
-            log(state, 3, "Invalid service state file");
         }
-    } else {
-        log(state, 3, "Service state file does not exist or is inaccessible");
     }
     
+    log(state, 3, "Saving service state failed");
     false
 }
