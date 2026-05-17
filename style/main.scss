@@ -18,7 +18,8 @@ $color-bg-overlay: #353945;
 $color-bg-input:   #282C34;
 
 $color-fg-primary: #A0A8CD;
-$color-fg-muted:   #4A5057;
+$color-fg-muted:   #6A7077;
+// $color-fg-muted:   #4A5057;
 $color-fg-light:   #ECEFF4;
 
 $color-red:        #EE6D85;
@@ -338,7 +339,7 @@ input[type="number"] {
   color: $color-fg-light;
   padding: 0.7rem 1rem;
   font-size: 1rem;
-  border-radius: 6px;
+  border-radius: 8px;
   font-family: $font-mono;
   transition: all 0.2s ease;
 
@@ -393,6 +394,7 @@ input[type="number"] {
   gap: 1.5rem;     
   margin-bottom: 1.5rem;
   align-items: end; 
+  padding-left: 2rem;
 
   > .form-group {
     flex: 1;            
@@ -661,7 +663,7 @@ input[type="number"] {
   border: 1px solid transparent;
   color: $color-fg-muted;
   padding: 0.4rem 0.8rem;
-  border-radius: 4px;
+  border-radius: 999px;
   cursor: pointer;
   font-weight: 600;
   display: flex;
@@ -925,7 +927,7 @@ input[type="number"] {
     left: 0;
     width: 100%;
     height: auto;
-    padding: 0.5rem;
+    padding: 0rem;
     border-right: none;
     border-top: 1px solid $color-bg-lighter;
     z-index: 100;
@@ -943,7 +945,7 @@ input[type="number"] {
     flex-direction: row;
     justify-content: space-around;
     width: 100%;
-    gap: 0.25rem;
+    gap: 0rem;
   }
   
   .nav-link {
@@ -956,7 +958,7 @@ input[type="number"] {
     border-left: none;
     border-bottom: 3px solid transparent;
     border-radius: 6px 6px 0 0;
-    gap: 0.25rem;
+    gap: 0rem;
 
     .nav-icon {
       width: 22px;

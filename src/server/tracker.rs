@@ -29,7 +29,17 @@ pub fn cleanup(state: &AppState) {
 
 // walk through every file in a library
 pub async fn update_library(root_path: &str, state: &AppState, search_new: bool) {
-    let allowed = ["mp3", "mp4", "m4a", "flac"];
+    let allowed = [
+        "aac", "adts", // "3qp", "adif", "m4a", "m4b", "m4p", "m4r", 
+        "mp3", "mp4",
+        "ape",
+        "aiff", "aif", "aifc",
+        "flac",
+        "mpc", "mpp", // "mp+",
+        "opus",
+        "ogg", "spx", "oga",
+        "wav", "wv", "wvc",
+    ];
     let concurrency_limit = 4;
     let base_client = if search_new {
         Some(state.read().unwrap().client.clone())
