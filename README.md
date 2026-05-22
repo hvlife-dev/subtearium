@@ -52,7 +52,6 @@ Upon starting the container, you can access the web UI at `http://<your-server-i
 
 ### RAM Usage Comparison (Over 10k songs)
 ![Dozzle RAM Usage](./public/readme_dozzle.png)
-*Usually, in my case, it uses 5-15MB (as of version 0.3.1), however to be certain I need to finish wider tests.*
 
 ---
 
